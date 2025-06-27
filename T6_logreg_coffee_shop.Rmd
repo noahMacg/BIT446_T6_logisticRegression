@@ -1,0 +1,55 @@
+**=====================================================**
+
+# Machine Failure Analysis 
+Noah MacGillivray | BIT-446 Assignment(T6) | Summer 2025 
+
+Logistic Regression Classification 
+
+**Environment:** Ubuntu, VS Code
+
+**=====================================================**
+
+## Introduction
+This program imports 
+
+
+## Required packages 
+```{r}
+# Load packages
+library(readxl)
+library(class)
+library(caTools)
+library(caret)
+library(ggplot2)
+library(lattice)
+library(metrica)
+
+cat("All packages loaded successfully!\n")
+```
+
+## Data Import and Initial Exploration 
+The coffee shop data is read in, head/tail/summary are printed to
+ensure proper import and view summary, and 
+```{r}
+
+# Read in sheet names
+sheet_names <- excel_sheets("BIT-446-RS-T6-Lattes1.xlsx")
+print(sheet_names)
+
+all_sheets <- list()
+
+for (sheet in sheet_names) {
+    all_sheets[[sheet]] <- read_excel("BIT-446-RS-T6-Lattes1.xlsx", sheet = sheet) # nolint
+}
+
+print(all_sheets)
+
+for (x in sheet_names) {
+  cat("Sheet:", x, "\n")
+  print(tail(all_sheets[[x]]))
+  cat("\n")
+}
+
+```
+
+## General impressions from summary 
