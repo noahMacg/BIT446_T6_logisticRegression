@@ -55,7 +55,7 @@ for (sheet in sheet_names) {
 lattes <- all_sheets[[1]]
 
 # Variable to hold the final predictions data
-new_data <- all_sheets[[2]]
+lattes_new <- all_sheets[[2]]
 
 # Variable to hold the data sheets information
 data_info <- all_sheets[[3]]
@@ -75,7 +75,7 @@ print(lattes)
 
 # Print NewData sheet
 cat("NewData Sheet\n")
-print(new_data)
+print(lattes_new)
 
 # Print data info via kableExtra package
 kable(data_info,
@@ -158,4 +158,12 @@ print(var_importance)
 
 ```{r}
 
+prediction <- predict(late_donut_lr_model, newdata = test_latte_donut, type = "response") 
+
+prediction <- ifelse(prediction > 0.5, "1", "0")
+
+# Convert to factor for comparison
+prediction <- as.factor(prediction)
+
+prediction <- as.data.frame(prediction)
 ```
