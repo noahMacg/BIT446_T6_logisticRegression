@@ -1,6 +1,6 @@
 **=====================================================**
 
-# Machine Failure Analysis 
+# Coffee Shop Purchasing Association Analysis  
 Noah MacGillivray | BIT-446 Assignment(T6) | Summer 2025 
 
 Logistic Regression Classification 
@@ -23,6 +23,10 @@ library(caret)
 library(ggplot2)
 library(lattice)
 library(metrica)
+library(skimr)
+library(knitr)
+library(kableExtra)
+
 
 cat("All packages loaded successfully!\n")
 ```
@@ -41,15 +45,68 @@ all_sheets <- list()
 for (sheet in sheet_names) {
     all_sheets[[sheet]] <- read_excel("BIT-446-RS-T6-Lattes1.xlsx", sheet = sheet) # nolint
 }
+# Variable to hold the training data
+lattes <- all_sheets[[1]]
 
-print(all_sheets)
 
+# Variable to hold the final predictions data
+new_data <- all_sheets[[2]]
+
+# Variable to hold the data sheets information
+data_info <- all_sheets[[3]]
+
+# Print the TrainTestData sheet
+cat("TrainTestData Sheet\n")
+print(lattes)
+
+# Print NewData sheet
+cat("NewData Sheet\n")
+print(new_data)
+
+# Print data info via kableExtra package
+kable(data_info,
+      caption = "Data Info",
+      col.names = c("Variable", "Definition")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE)
+
+# Loops through all sheets imported and prints the tails 
 for (x in sheet_names) {
   cat("Sheet:", x, "\n")
   print(tail(all_sheets[[x]]))
   cat("\n")
 }
 
+# Loops through the first two sheets and prints the Skim summary
+for (x in sheet_names[-length(sheet_names)]) {
+  cat("=== Skim Summary for Sheet:", x, "===\n")
+  print(skim(all_sheets[[x]]))
+  cat("\n")
+}
 ```
 
 ## General impressions from summary 
+TODO
+
+
+## Data splitting for ***Stratified*** logistic regression training 
+Seed was set for reproducibility; data was split using random stratified approach 
+(random selection, but each train/test division has equal number of the target variable- 
+LatteDonut). 80% for training and 20% for testing.  
+
+```{r}
+# Set seed for reproducible results
+set.seed(3)
+
+# Stratified random split 80/20
+split <- sample.split(lattes$LatteDonut, SplitRatio = 0.8)
+
+# Distribute the split data to training and testing
+train_data <- subset(lattes, split == TRUE)
+test_data <- subset(lattes, split == FALSE)
+
+# Confirm the data was split correctly
+print(train_data)
+print(test_data)
+
+```
