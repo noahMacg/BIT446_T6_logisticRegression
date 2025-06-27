@@ -1,4 +1,4 @@
-**=====================================================**
+**====================================================================================**
 
 # Coffee Shop Purchasing Association Analysis  
 Noah MacGillivray | BIT-446 Assignment(T6) | Summer 2025 
@@ -7,13 +7,13 @@ Logistic Regression Classification
 
 **Environment:** Ubuntu, VS Code
 
-**=====================================================**
+**====================================================================================**
 
 ## Introduction
 This program imports 
 
 
-## Required packages 
+## Required Packages 
 ```{r}
 # Load packages
 library(readxl)
@@ -26,14 +26,20 @@ library(metrica)
 library(skimr)
 library(knitr)
 library(kableExtra)
-
+library(fmsb)
 
 cat("All packages loaded successfully!\n")
 ```
 
-## Data Import and Initial Exploration 
-The coffee shop data is read in, head/tail/summary are printed to
-ensure proper import and view summary, and 
+## Data Import and Conversion
+The coffee shop data which includes three different sheets including the training/testing
+data ("TrainTestData"), the new data for predictions ("NewData"), and a sheet related to the 
+data information ("Info"). The three sheets are read in and placed in a list and then 
+distributed to three different data field variables. The target variable ("LatteDonut") 
+in the training/testing data is then converted to a factor type to allow other packages 
+below to analyze the results. This was done before splitting to allow for further testing 
+as needed. 
+
 ```{r}
 
 # Read in sheet names
@@ -48,14 +54,22 @@ for (sheet in sheet_names) {
 # Variable to hold the training data
 lattes <- all_sheets[[1]]
 
-
 # Variable to hold the final predictions data
 new_data <- all_sheets[[2]]
 
 # Variable to hold the data sheets information
 data_info <- all_sheets[[3]]
 
-# Print the TrainTestData sheet
+# Convert target variable to factor (only for the training data)
+lattes$LatteDonut <- as.factor(lattes$LatteDonut)
+lattes$LatteDonut <- relevel(lattes$LatteDonut, ref = "0")
+```
+
+## Raw Data Summary
+TODO
+
+```{r}
+#Print the TrainTestData sheet
 cat("TrainTestData Sheet\n")
 print(lattes)
 
@@ -83,18 +97,22 @@ for (x in sheet_names[-length(sheet_names)]) {
   print(skim(all_sheets[[x]]))
   cat("\n")
 }
+
 ```
 
-## General impressions from summary 
+
+
+## General Impressions From Summary 
 TODO
 
 
-## Data splitting for ***Stratified*** logistic regression training 
+## Data Splitting for ***Stratified*** Logistic Regression (LR) Training 
 Seed was set for reproducibility; data was split using random stratified approach 
 (random selection, but each train/test division has equal number of the target variable- 
 LatteDonut). 80% for training and 20% for testing.  
 
 ```{r}
+
 # Set seed for reproducible results
 set.seed(3)
 
@@ -102,27 +120,42 @@ set.seed(3)
 split <- sample.split(lattes$LatteDonut, SplitRatio = 0.8)
 
 # Distribute the split data to training and testing
-train_data <- subset(lattes, split == TRUE)
-test_data <- subset(lattes, split == FALSE)
+train_latte_donut <- subset(lattes, split == TRUE)
+test_latte_donut <- subset(lattes, split == FALSE)
 
 # Confirm the data was split correctly
-print(train_data)
-print(test_data)
+print(train_latte_donut)
+print(test_latte_donut)
 
 ```
 
-## Create logistic regression classification model
+## Train logistic regression classification model
 This is where we create the *logistic regression classification model* with:  
 - **Features**: Age, EstMonthsCustomer, and EstMonthsCustomer  
 - **Target**: LatteDonut 
 
 ```{r}
-model <- glm(LatteDonut ~ Age + EstMonthsCustomer + EstSalary,
-             data = train_data,
-             family = binomial)
-
-# View model summary
-summary(model)
-
+late_donut_lr_model <- glm(LatteDonut ~ Age + EstMonthsCustomer + EstSalary,
+                           data = train_latte_donut,
+                           family = binomial)
 ```
 
+## Model Information and Summary
+
+```{r}
+# View model summary
+summary(late_donut_lr_model)
+
+# Calculate Nagelkerke R-squared value
+nagelkerke_r2 <- NagelkerkeR2(late_donut_lr_model)
+print(nagelkerke_r2)
+
+var_importance <- varImp(late_donut_lr_model)
+print(var_importance)
+```
+
+## Validate the Model 
+
+```{r}
+
+```

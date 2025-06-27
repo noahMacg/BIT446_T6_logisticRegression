@@ -616,9 +616,12 @@ library(metrica)</code></pre>
 <pre class="r"><code>library(skimr)
 library(knitr)
 library(kableExtra)
-
-
-cat(&quot;All packages loaded successfully!\n&quot;)</code></pre>
+library(fmsb)</code></pre>
+<pre><code>## Registered S3 methods overwritten by &#39;fmsb&#39;:
+##   method    from
+##   print.roc pROC
+##   plot.roc  pROC</code></pre>
+<pre class="r"><code>cat(&quot;All packages loaded successfully!\n&quot;)</code></pre>
 <pre><code>## All packages loaded successfully!</code></pre>
 </div>
 <div id="data-import-and-initial-exploration" class="section level2">
@@ -886,7 +889,44 @@ print(train_data)</code></pre>
 </div>
 <div id="create-logistic-regression-classification-model" class="section level2">
 <h2>Create logistic regression classification model</h2>
-<p>This is where we create the logistic regression classification model with: - Features: Age, EstMonthsCustomer, and EstMonthsCustomer - Target: LatteDonut</p>
+<p>This is where we create the <em>logistic regression classification model</em> with:<br />
+- <strong>Features</strong>: Age, EstMonthsCustomer, and EstMonthsCustomer<br />
+- <strong>Target</strong>: LatteDonut</p>
+<pre class="r"><code>model &lt;- glm(LatteDonut ~ Age + EstMonthsCustomer + EstSalary,
+             data = train_data,
+             family = binomial)
+
+# View model summary
+summary(model)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = LatteDonut ~ Age + EstMonthsCustomer + EstSalary, 
+##     family = binomial, data = train_data)
+## 
+## Coefficients:
+##                     Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)       -1.446e+01  2.220e+00  -6.513 7.38e-11 ***
+## Age                7.019e-02  3.518e-02   1.995   0.0461 *  
+## EstMonthsCustomer  1.542e-01  8.171e-02   1.887   0.0592 .  
+## EstSalary          1.509e-04  3.623e-05   4.164 3.13e-05 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 553.44  on 439  degrees of freedom
+## Residual deviance: 117.83  on 436  degrees of freedom
+## AIC: 125.83
+## 
+## Number of Fisher Scoring iterations: 8</code></pre>
+<pre class="r"><code># Calculate Nagelkerke R-squared value
+nagelkerke_r2 &lt;- NagelkerkeR2(model)
+print(nagelkerke_r2)</code></pre>
+<pre><code>## $N
+## [1] 440
+## 
+## $R2
+## [1] 0.8780316</code></pre>
 </div>
 </div>
 
