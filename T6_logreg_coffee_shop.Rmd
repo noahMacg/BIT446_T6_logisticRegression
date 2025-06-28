@@ -167,3 +167,53 @@ prediction <- as.factor(prediction)
 
 prediction <- as.data.frame(prediction)
 ```
+
+## Model Results and Metrics 
+
+```{r}
+# Create confusion matrix 
+confusionMatrix(data = prediction$prediction, 
+                reference = test_latte_donut$LatteDonut,
+                mode = "prec_recall")
+
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+observations <- as.numeric(paste(test_latte_donut$LatteDonut))
+predictions <- as.numeric(paste(prediction$prediction))
+data <- data.frame(cbind(observations, predictions))
+
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data,
+  obs = observations,
+  pred = predictions,
+  pos_level = 1,
+  type = "classification"
+)
+
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data,
+  obs = observations,
+  pred = predictions,
+)
+```
+
+## New Data LR Predictions 
+
+```{r}
+coffee_donut_prediction <- predict(late_donut_lr_model,
+                                   newdata = lattes_new,
+                                   type = "response")
+
+lattes_new$LR_prob <- coffee_donut_prediction
+lattes_new$LR_pred <- ifelse(coffee_donut_prediction > 0.5, 1, 0)
+
+print(lattes_new)
+
+
+
+```
+
+## Conclusion and Analysis
+
