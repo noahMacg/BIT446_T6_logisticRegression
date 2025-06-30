@@ -9,9 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Noah MacGillivray" />
 
+<meta name="date" content="2025-06-29" />
 
-<title>T6_logreg_coffee_shop.knit</title>
+<title>Coffee Shop Purchasing Association Analysis</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -578,23 +580,22 @@ pre code {
 
 
 
+<h1 class="title toc-ignore">Coffee Shop Purchasing Association Analysis</h1>
+<h3 class="subtitle">BIT-446 Assignment(T6) | Summer 2025</h3>
+<h4 class="author">Noah MacGillivray</h4>
+<h4 class="date">2025-06-29</h4>
 
 </div>
 
 
-<p><strong>=====================================================</strong></p>
-<div id="coffee-shop-purchasing-association-analysis" class="section level1">
-<h1>Coffee Shop Purchasing Association Analysis</h1>
-<p>Noah MacGillivray | BIT-446 Assignment(T6) | Summer 2025</p>
-<p>Logistic Regression Classification</p>
 <p><strong>Environment:</strong> Ubuntu, VS Code</p>
-<p><strong>=====================================================</strong></p>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>This program imports</p>
+<p>This program is designed to analyze the relationship of a customer’s age, timeline of being a customer and their estimated age to gain insight if these variables are correlated to purchasing coffee and a donut at the same time for future business insight.</p>
+<p>Logistic regression classification is used in the project to analyze these variables and build a model to (hopefully) predict further purchasing decisions. The general flow of the program is as follows: read data in –&gt; analyze raw metrics –&gt; split the first data field (that has known outcomes) into training/testing fields –&gt; train the logistic regression model –&gt; test the model’s performance –&gt; analyze the outcomes –&gt; predict with new data where the outcomes are unknown.</p>
 </div>
 <div id="required-packages" class="section level2">
-<h2>Required packages</h2>
+<h2>Required Packages</h2>
 <pre class="r"><code># Load packages
 library(readxl)
 library(class)
@@ -621,17 +622,22 @@ library(fmsb)</code></pre>
 ##   method    from
 ##   print.roc pROC
 ##   plot.roc  pROC</code></pre>
+<pre class="r"><code>library(car)</code></pre>
+<pre><code>## Loading required package: carData</code></pre>
 <pre class="r"><code>cat(&quot;All packages loaded successfully!\n&quot;)</code></pre>
 <pre><code>## All packages loaded successfully!</code></pre>
 </div>
-<div id="data-import-and-initial-exploration" class="section level2">
-<h2>Data Import and Initial Exploration</h2>
-<p>The coffee shop data is read in, head/tail/summary are printed to ensure proper import and view summary, and</p>
+<div id="data-import-and-conversion" class="section level2">
+<h2>Data Import and Conversion</h2>
+<p>The coffee shop data file imported includes three different sheets including the training/testing data (“TrainTestData”), the new data for predictions (“NewData”), and a sheet related to the data information (“Info”). The three sheets are read, placed in a list and then distributed to three different data field variables. The target variable (“LatteDonut”) in the training/testing data is then converted to a factor type to allow other packages below to analyze the results. This was done before splitting to allow for further testing as needed.</p>
 <pre class="r"><code># Read in sheet names
 sheet_names &lt;- excel_sheets(&quot;BIT-446-RS-T6-Lattes1.xlsx&quot;)
+
+# Print the sheet to understand file structure
 print(sheet_names)</code></pre>
 <pre><code>## [1] &quot;TrainTestData&quot; &quot;NewData&quot;       &quot;Info&quot;</code></pre>
-<pre class="r"><code>all_sheets &lt;- list()
+<pre class="r"><code># Create list to hold the different sheets
+all_sheets &lt;- list()
 
 for (sheet in sheet_names) {
     all_sheets[[sheet]] &lt;- read_excel(&quot;BIT-446-RS-T6-Lattes1.xlsx&quot;, sheet = sheet) # nolint
@@ -639,35 +645,41 @@ for (sheet in sheet_names) {
 # Variable to hold the training data
 lattes &lt;- all_sheets[[1]]
 
-
 # Variable to hold the final predictions data
-new_data &lt;- all_sheets[[2]]
+lattes_new &lt;- all_sheets[[2]]
 
 # Variable to hold the data sheets information
 data_info &lt;- all_sheets[[3]]
 
-# Print the TrainTestData sheet
+# Convert target variable to factor (only for the training data)
+lattes$LatteDonut &lt;- as.factor(lattes$LatteDonut)
+lattes$LatteDonut &lt;- relevel(lattes$LatteDonut, ref = &quot;0&quot;)</code></pre>
+</div>
+<div id="raw-data-summary" class="section level2">
+<h2>Raw Data Summary</h2>
+<p>Here we view the raw data to the three sheets read in, head and tail are displayed to ensure proper import, info sheet is displayed describing each row in the data fields, and prints out a basic summary.</p>
+<pre class="r"><code>#Print the TrainTestData sheet
 cat(&quot;TrainTestData Sheet\n&quot;)</code></pre>
 <pre><code>## TrainTestData Sheet</code></pre>
 <pre class="r"><code>print(lattes)</code></pre>
 <pre><code>## # A tibble: 550 × 5
 ##    Record   Age EstMonthsCustomer EstSalary LatteDonut
-##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;
-##  1      1    26                 7     46502          0
-##  2      2    58                17     92946          1
-##  3      3    36                 1     59027          1
-##  4      4    66                18     92321          1
-##  5      5    59                18     97795          1
-##  6      6    31                 7     47402          0
-##  7      7    35                 4     59692          0
-##  8      8    62                20     98150          1
-##  9      9    59                18     92634          1
-## 10     10    32                 6     45902          0
+##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt; &lt;fct&gt;     
+##  1      1    26                 7     46502 0         
+##  2      2    58                17     92946 1         
+##  3      3    36                 1     59027 1         
+##  4      4    66                18     92321 1         
+##  5      5    59                18     97795 1         
+##  6      6    31                 7     47402 0         
+##  7      7    35                 4     59692 0         
+##  8      8    62                20     98150 1         
+##  9      9    59                18     92634 1         
+## 10     10    32                 6     45902 0         
 ## # ℹ 540 more rows</code></pre>
 <pre class="r"><code># Print NewData sheet
 cat(&quot;NewData Sheet\n&quot;)</code></pre>
 <pre><code>## NewData Sheet</code></pre>
-<pre class="r"><code>print(new_data)</code></pre>
+<pre class="r"><code>print(lattes_new)</code></pre>
 <pre><code>## # A tibble: 100 × 4
 ##    Record   Age EstMonthsCustomer EstSalary
 ##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt;
@@ -745,7 +757,7 @@ LatteDonut
 </tr>
 </tbody>
 </table>
-<pre class="r"><code># Loops through all sheets imported and prints the tails 
+<pre class="r"><code># Loops through all sheets imported and prints the tails
 for (x in sheet_names) {
   cat(&quot;Sheet:&quot;, x, &quot;\n&quot;)
   print(tail(all_sheets[[x]]))
@@ -839,12 +851,18 @@ for (x in sheet_names[-length(sheet_names)]) {
 ## 4 71990   86386   99266 ▅▇▅▆▆</code></pre>
 </div>
 <div id="general-impressions-from-summary" class="section level2">
-<h2>General impressions from summary</h2>
-<p>TODO</p>
+<h2><em>General Impressions From Summary</em></h2>
+<ul>
+<li>Training and testing data sheet has 550 customer transactions with 5 columns.</li>
+<li>New data sheet for predictions has 100 customer transactions with 4 columns.</li>
+<li>Training/testing data appears more skewed (rightward) than the new data which is mostly evenly distributed.</li>
+<li>The training/testing sheet appears to have slightly younger customers, shorter customer time, and higher income. All three of these seem like they may be correlated.</li>
+<li>Approximately 32% of customers bought donuts with coffee in this data frame.</li>
+</ul>
 </div>
-<div id="data-splitting-for-stratified-logistic-regression-training" class="section level2">
-<h2>Data splitting for <strong><em>Stratified</em></strong> logistic regression training</h2>
-<p>Seed was set for reproducibility; data was split using random stratified approach (random selection, but each train/test division has equal number of the target variable- LatteDonut). 80% for training and 20% for testing.</p>
+<div id="data-splitting-for-stratified-logistic-regression-lr-training" class="section level2">
+<h2>Data Splitting for <strong><em>Stratified</em></strong> Logistic Regression (LR) Training</h2>
+<p>Seed was set for reproducibility; data was split using random stratified approach (random selection, but each train/test division has equal number of the target variable- LatteDonut). 80% for training and 20% for testing. Split data is printed for validation.</p>
 <pre class="r"><code># Set seed for reproducible results
 set.seed(3)
 
@@ -852,56 +870,59 @@ set.seed(3)
 split &lt;- sample.split(lattes$LatteDonut, SplitRatio = 0.8)
 
 # Distribute the split data to training and testing
-train_data &lt;- subset(lattes, split == TRUE)
-test_data &lt;- subset(lattes, split == FALSE)
+train_latte_donut &lt;- subset(lattes, split == TRUE)
+test_latte_donut &lt;- subset(lattes, split == FALSE)
 
 # Confirm the data was split correctly
-print(train_data)</code></pre>
+print(train_latte_donut)</code></pre>
 <pre><code>## # A tibble: 440 × 5
 ##    Record   Age EstMonthsCustomer EstSalary LatteDonut
-##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;
-##  1      1    26                 7     46502          0
-##  2      2    58                17     92946          1
-##  3      3    36                 1     59027          1
-##  4      7    35                 4     59692          0
-##  5      8    62                20     98150          1
-##  6      9    59                18     92634          1
-##  7     10    32                 6     45902          0
-##  8     11    31                 4     47634          0
-##  9     12    31                 8     68884          1
-## 10     13    59                21     91644          1
+##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt; &lt;fct&gt;     
+##  1      1    26                 7     46502 0         
+##  2      2    58                17     92946 1         
+##  3      3    36                 1     59027 1         
+##  4      7    35                 4     59692 0         
+##  5      8    62                20     98150 1         
+##  6      9    59                18     92634 1         
+##  7     10    32                 6     45902 0         
+##  8     11    31                 4     47634 0         
+##  9     12    31                 8     68884 1         
+## 10     13    59                21     91644 1         
 ## # ℹ 430 more rows</code></pre>
-<pre class="r"><code>print(test_data)</code></pre>
+<pre class="r"><code>print(test_latte_donut)</code></pre>
 <pre><code>## # A tibble: 110 × 5
 ##    Record   Age EstMonthsCustomer EstSalary LatteDonut
-##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;
-##  1      4    66                18     92321          1
-##  2      5    59                18     97795          1
-##  3      6    31                 7     47402          0
-##  4     28    19                 1     42473          0
-##  5     29    28                 1     47200          0
-##  6     34    67                16     95314          1
-##  7     35    23                 5     49683          0
-##  8     41    46                 6     66121          1
-##  9     44    55                16     93957          1
-## 10     51    20                 2     44795          0
+##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt; &lt;fct&gt;     
+##  1      4    66                18     92321 1         
+##  2      5    59                18     97795 1         
+##  3      6    31                 7     47402 0         
+##  4     28    19                 1     42473 0         
+##  5     29    28                 1     47200 0         
+##  6     34    67                16     95314 1         
+##  7     35    23                 5     49683 0         
+##  8     41    46                 6     66121 1         
+##  9     44    55                16     93957 1         
+## 10     51    20                 2     44795 0         
 ## # ℹ 100 more rows</code></pre>
 </div>
-<div id="create-logistic-regression-classification-model" class="section level2">
-<h2>Create logistic regression classification model</h2>
+<div id="train-logistic-regression-classification-model" class="section level2">
+<h2>Train Logistic Regression Classification Model</h2>
 <p>This is where we create the <em>logistic regression classification model</em> with:<br />
-- <strong>Features</strong>: Age, EstMonthsCustomer, and EstMonthsCustomer<br />
+- <strong>Features</strong>: Age, EstMonthsCustomer, and EstSalary<br />
 - <strong>Target</strong>: LatteDonut</p>
-<pre class="r"><code>model &lt;- glm(LatteDonut ~ Age + EstMonthsCustomer + EstSalary,
-             data = train_data,
-             family = binomial)
-
-# View model summary
-summary(model)</code></pre>
+<pre class="r"><code>late_donut_lr_model &lt;- glm(LatteDonut ~ Age + EstMonthsCustomer + EstSalary,
+                           data = train_latte_donut,
+                           family = binomial)</code></pre>
+</div>
+<div id="model-information-and-summary" class="section level2">
+<h2>Model Information and Summary</h2>
+<p>LR model summary is printed to show summary of model performance. Nagelkerke R^2 value is printed which shows the how well the model is segregating probabilities towards 0 or 1. Overall variable importance is printed to show how each variable is affecting the model.</p>
+<pre class="r"><code># View model summary
+summary(late_donut_lr_model)</code></pre>
 <pre><code>## 
 ## Call:
 ## glm(formula = LatteDonut ~ Age + EstMonthsCustomer + EstSalary, 
-##     family = binomial, data = train_data)
+##     family = binomial, data = train_latte_donut)
 ## 
 ## Coefficients:
 ##                     Estimate Std. Error z value Pr(&gt;|z|)    
@@ -920,13 +941,729 @@ summary(model)</code></pre>
 ## 
 ## Number of Fisher Scoring iterations: 8</code></pre>
 <pre class="r"><code># Calculate Nagelkerke R-squared value
-nagelkerke_r2 &lt;- NagelkerkeR2(model)
+nagelkerke_r2 &lt;- NagelkerkeR2(late_donut_lr_model)
 print(nagelkerke_r2)</code></pre>
 <pre><code>## $N
 ## [1] 440
 ## 
 ## $R2
 ## [1] 0.8780316</code></pre>
+<pre class="r"><code># Calculate variable overall importance
+var_importance &lt;- varImp(late_donut_lr_model)
+print(var_importance)</code></pre>
+<pre><code>##                    Overall
+## Age               1.994925
+## EstMonthsCustomer 1.886751
+## EstSalary         4.163827</code></pre>
+</div>
+<div id="exploration-of-different-model-variables" class="section level2">
+<h2>Exploration of Different Model Variables</h2>
+<p>After running the initial model with all three variables, I wanted to see if there was multicollinearity, and if so, would how would it affect the model’s accuracy and predictive power. I</p>
+<pre class="r"><code># Original model for comparison
+cat(&quot;=======ALL THREE VARIABLES MODEL SUMMARY=======\n&quot;); summary(late_donut_lr_model) # nolint</code></pre>
+<pre><code>## =======ALL THREE VARIABLES MODEL SUMMARY=======</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = LatteDonut ~ Age + EstMonthsCustomer + EstSalary, 
+##     family = binomial, data = train_latte_donut)
+## 
+## Coefficients:
+##                     Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)       -1.446e+01  2.220e+00  -6.513 7.38e-11 ***
+## Age                7.019e-02  3.518e-02   1.995   0.0461 *  
+## EstMonthsCustomer  1.542e-01  8.171e-02   1.887   0.0592 .  
+## EstSalary          1.509e-04  3.623e-05   4.164 3.13e-05 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 553.44  on 439  degrees of freedom
+## Residual deviance: 117.83  on 436  degrees of freedom
+## AIC: 125.83
+## 
+## Number of Fisher Scoring iterations: 8</code></pre>
+<pre class="r"><code># New model, remove age
+model_no_age &lt;- glm(LatteDonut ~ EstMonthsCustomer + EstSalary, 
+                    family = binomial, data = train_latte_donut)
+cat(&quot;=======ESTMONTHSCUSTOMER+ESTSALARY MODEL SUMMARY=======\n&quot;); summary(model_no_age) # nolint</code></pre>
+<pre><code>## =======ESTMONTHSCUSTOMER+ESTSALARY MODEL SUMMARY=======</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = LatteDonut ~ EstMonthsCustomer + EstSalary, family = binomial, 
+##     data = train_latte_donut)
+## 
+## Coefficients:
+##                     Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)       -1.367e+01  1.898e+00  -7.203 5.90e-13 ***
+## EstMonthsCustomer  1.516e-01  7.871e-02   1.926   0.0541 .  
+## EstSalary          1.834e-04  3.047e-05   6.019 1.76e-09 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 553.44  on 439  degrees of freedom
+## Residual deviance: 121.92  on 437  degrees of freedom
+## AIC: 127.92
+## 
+## Number of Fisher Scoring iterations: 8</code></pre>
+<pre class="r"><code># Remove EstMonthsCustomer
+model_no_months &lt;- glm(LatteDonut ~ Age + EstSalary,
+                       family = binomial, data = train_latte_donut)
+cat(&quot;=======AGE+ESTSALARY MODEL SUMMARY=======\n&quot;); summary(model_no_months) # nolint</code></pre>
+<pre><code>## =======AGE+ESTSALARY MODEL SUMMARY=======</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = LatteDonut ~ Age + EstSalary, family = binomial, 
+##     data = train_latte_donut)
+## 
+## Coefficients:
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -1.444e+01  1.845e+00  -7.828 4.97e-15 ***
+## Age          7.032e-02  3.433e-02   2.048   0.0405 *  
+## EstSalary    1.646e-04  3.197e-05   5.148 2.63e-07 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 553.44  on 439  degrees of freedom
+## Residual deviance: 121.80  on 437  degrees of freedom
+## AIC: 127.8
+## 
+## Number of Fisher Scoring iterations: 7</code></pre>
+<pre class="r"><code># Remove EstSalary 
+model_no_salary &lt;- glm(LatteDonut ~ Age + EstMonthsCustomer, 
+                       family = binomial, data = train_latte_donut)
+cat(&quot;=======AGE+ESTMONTHSCUSTOMER MODEL SUMMARY=======\n&quot;); summary(model_no_salary) # nolint</code></pre>
+<pre><code>## =======AGE+ESTMONTHSCUSTOMER MODEL SUMMARY=======</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = LatteDonut ~ Age + EstMonthsCustomer, family = binomial, 
+##     data = train_latte_donut)
+## 
+## Coefficients:
+##                   Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)       -9.60182    1.11576  -8.606  &lt; 2e-16 ***
+## Age                0.15665    0.02689   5.826 5.67e-09 ***
+## EstMonthsCustomer  0.24641    0.06018   4.095 4.23e-05 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 553.44  on 439  degrees of freedom
+## Residual deviance: 138.42  on 437  degrees of freedom
+## AIC: 144.42
+## 
+## Number of Fisher Scoring iterations: 7</code></pre>
+<pre class="r"><code># EstSalary only model
+model_salary_only &lt;- glm(LatteDonut ~ EstSalary,
+                        family = binomial, data = train_latte_donut)
+cat(&quot;=======ESTSALARY ONLY MODEL SUMMARY=======\n&quot;); summary(model_salary_only) # nolint</code></pre>
+<pre><code>## =======ESTSALARY ONLY MODEL SUMMARY=======</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = LatteDonut ~ EstSalary, family = binomial, data = train_latte_donut)
+## 
+## Coefficients:
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -1.389e+01  1.602e+00  -8.671  &lt; 2e-16 ***
+## EstSalary    2.012e-04  2.532e-05   7.943 1.97e-15 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 553.44  on 439  degrees of freedom
+## Residual deviance: 126.13  on 438  degrees of freedom
+## AIC: 130.13
+## 
+## Number of Fisher Scoring iterations: 7</code></pre>
+<pre class="r"><code># All three variables variable importance
+cat(&quot;All three variables importance:\n&quot;); var_importance</code></pre>
+<pre><code>## All three variables importance:</code></pre>
+<pre><code>##                    Overall
+## Age               1.994925
+## EstMonthsCustomer 1.886751
+## EstSalary         4.163827</code></pre>
+<pre class="r"><code>var_importance_no_months &lt;- varImp(model_no_months)
+cat(&quot;Age+EstSalary Variable importance:\n&quot;); var_importance_no_months</code></pre>
+<pre><code>## Age+EstSalary Variable importance:</code></pre>
+<pre><code>##            Overall
+## Age       2.048441
+## EstSalary 5.148233</code></pre>
+<pre class="r"><code># Compare Nagelkerke R-squared
+nagelkerke_r2_original &lt;- NagelkerkeR2(late_donut_lr_model)
+nagelkerke_r2_no_months &lt;- NagelkerkeR2(model_no_months)
+nagelkerke_r2_salary_only &lt;- NagelkerkeR2(model_salary_only)
+
+cat(&quot;Nagelkerke R-squared--Original (3 variables):\n&quot;); nagelkerke_r2_original</code></pre>
+<pre><code>## Nagelkerke R-squared--Original (3 variables):</code></pre>
+<pre><code>## $N
+## [1] 440
+## 
+## $R2
+## [1] 0.8780316</code></pre>
+<pre class="r"><code>cat(&quot;Nagelkerke R-squared--Age + EstSalary only:\n&quot;); nagelkerke_r2_no_months</code></pre>
+<pre><code>## Nagelkerke R-squared--Age + EstSalary only:</code></pre>
+<pre><code>## $N
+## [1] 440
+## 
+## $R2
+## [1] 0.8733219</code></pre>
+<pre class="r"><code>cat(&quot;Nagelkerke R-squared--EstSalary only:\n&quot;); nagelkerke_r2_salary_only</code></pre>
+<pre><code>## Nagelkerke R-squared--EstSalary only:</code></pre>
+<pre><code>## $N
+## [1] 440
+## 
+## $R2
+## [1] 0.8681514</code></pre>
+<pre class="r"><code># Plot the 3 vars and age+salary variable importance
+plot(var_importance, main = &quot;Variable Importance - All Variables&quot;)</code></pre>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAADAFBMVEUAAAABAQECAgIDAwMEBAQFBQUGBgYHBwcICAgJCQkKCgoLCwsMDAwNDQ0ODg4PDw8QEBARERESEhITExMUFBQVFRUWFhYXFxcYGBgZGRkaGhobGxscHBwdHR0eHh4fHx8gICAhISEiIiIjIyMkJCQlJSUmJiYnJycoKCgpKSkqKiorKyssLCwtLS0uLi4vLy8wMDAxMTEyMjIzMzM0NDQ1NTU2NjY3Nzc4ODg5OTk6Ojo7Ozs8PDw9PT0+Pj4/Pz9AQEBBQUFCQkJDQ0NERERFRUVGRkZHR0dISEhJSUlKSkpLS0tMTExNTU1OTk5PT09QUFBRUVFSUlJTU1NUVFRVVVVWVlZXV1dYWFhZWVlaWlpbW1tcXFxdXV1eXl5fX19gYGBhYWFiYmJjY2NkZGRlZWVmZmZnZ2doaGhpaWlqampra2tsbGxtbW1ubm5vb29wcHBxcXFycnJzc3N0dHR1dXV2dnZ3d3d4eHh5eXl6enp7e3t8fHx9fX1+fn5/f3+AgICBgYGCgoKDg4OEhISFhYWGhoaHh4eIiIiJiYmKioqLi4uMjIyNjY2Ojo6Pj4+QkJCRkZGSkpKTk5OUlJSVlZWWlpaXl5eYmJiZmZmampqbm5ucnJydnZ2enp6fn5+goKChoaGioqKjo6OkpKSlpaWmpqanp6eoqKipqamqqqqrq6usrKytra2urq6vr6+wsLCxsbGysrKzs7O0tLS1tbW2tra3t7e4uLi5ubm6urq7u7u8vLy9vb2+vr6/v7/AwMDBwcHCwsLDw8PExMTFxcXGxsbHx8fIyMjJycnKysrLy8vMzMzNzc3Ozs7Pz8/Q0NDR0dHS0tLT09PU1NTV1dXW1tbX19fY2NjZ2dna2trb29vc3Nzd3d3e3t7f39/g4ODh4eHi4uLj4+Pk5OTl5eXm5ubn5+fo6Ojp6enq6urr6+vs7Ozt7e3u7u7v7+/w8PDx8fHy8vLz8/P09PT19fX29vb39/f4+Pj5+fn6+vr7+/v8/Pz9/f3+/v7////isF19AAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3deYCjdWH/8e/ssrCccv04hIKCB4coorZUBNRStIqtqCgoKqKcIh4goPWqtrZKPfCqJ7RWvKtoRSpaq/XEovW+rSgetSqIcsixm9/kyTFJJpOZ/ZCZSTKv1x/skydPst9vvvO8yUwy2VIDIFKWewAA40pAAUICChASUICQgAKEBBQgJKAAIQEFCAkoQEhAAUICChASUICQgAKEBBQgJKAAIQEFCAkoQEhAAUICChASUICQgAKEBBQgJKAAIQEFCAkoQEhAAUICChASUICQgAKEBBQgJKAAIQEFCAkoQEhAAUICChASUICQgAKEBBQgJKAAIQEFCAkoQEhAAUICChASUICQgAKEBBQgJKAAIQEFCAkoQEhAAUICChASUICQgAKEBBQgJKAAIQEFCAkoQEhAAUICChASUICQgAKEBBQgJKAAIQEFCAno6LhlhzJtj449P63vKI9Y0K1fWT9067mvP6x+/bEbfLMOJ1ej+fqCjp0sn6xmXv66c1/HA9fvMRz1xWQ4BHSEnFKdYt+a2fHmasd7F3TjyQrouU+b9v4l+asW4MRGQPft3DdPQEd9MRkOAR0h/1GdYn8/s+Nh9ctbXL+gG09WQPev/1VPW5K/an43btsIaPlax875Ajrii8lwCOgIWbdT/QS4b/vyTVv2P0/6EtBFc1Gzn+UvO3bOF9ARX0yGQ0BHyWn1E2Cj37Qufrw6az+0sNteuP+0g+e+XkBjR7UCumfHzvkCOuKLyXAI6Cj5VHWSvat18cz6pW1uGs59C2jqt5u2Alq+MLN33oCO9mIyHAI6StbvUj8DHte6uHf90pOGdN+LE9Bbbh7K4GYZpYBeUB/LptV34M+Y2TtvQEd7MRkOAR0pT62fAduva1z4YRWsjzYuXPuKYw7adc1t9njIuVc2j616dmCtdtVZd137pd6TZ/bhzXPuuvMO2nHtHY++ZH1zd88597kz7r7j2js96Dk/7TO4joAe0bizrx2xadl4j6M/Vt/1ldPuvOW2B53wjebBB9aPOLl2y9v+5LZr7/CIf+l85rXuQ6febac12+/z+Auv77rr9lz+rv2Mr5w53+y/cNKdt9r+4BP/q+P+f/m6h9xhq7W7HP7S33WOftDMBqseuaMeU//vLuvae+cN6Igu5i1ve+L9dtv0Toef9N71NW41AR0pn61Os881Lry2vr3DLfXNm168Xbspa86qdrXOuS/Vr7m8++Tpd3jjnPv2Xs3dh/ygcWjXOXfFn7dutfHxV80a3KyAvmvj5tHH31h74UbNv+7sxnnZCOhVf9I8Yq+Ptu/mkn3bY9vpHzrvuj2X3oDOPft1z5pq7F79jFaM1/3NVu27P7/diMEzG+jnq+s3e+8Hq1t/sr17/oCO5GK+/c7tO9v7bRv2QNCHgI6U9bvVv7KbL/Y+uL795Grz1NLpmGpf45z7fnV29Zxz/Q6vzrkH79neu/23q92dN/vKzh232nfWU7XegN5hTfvgM547c8NGFKuAnnhYe++q1zTv5cVTnWN7zO/7zKU3oHPP/uyZ3Wc17v6Gh84+dt6ZDfTy+m22uP7Gret/ntzePX9AR3Exn9l1Zyds0ANBHwI6Ws6of13vX23eUL128an65ltLt4vrOxvnXONpRvc51/fww3p2lj2qdnXc7Ne37br+dr3P1HoD2qEzilv9on5EFdCtO3avuqy6k3/oueWJM3fdnsulp522fX3rbqed9v6Bs9+8Y++ab1b3dGL3sW9Y0MwGukf9Jo+p1Y6r/7l9+2e+8wd0BBfz4p6bvXFDHgj6ENDRcln1dV39qOuS+tau1Teh1VONzZ746re+snoiU46u76zOuS1Kn3Ou7+Gtc27nR51yl8ZW9VSx42bH1jenTr306+87vLq+9zWc2QHd4k+Pu1frXNzisOPu0dh6X/2IA5u7d330yfs1tu5T3/2dTart25/yhjPu3th9UZ+5dL+INPfsp+155GOa03lqffel1eaaR7z09SdVP19Y+92FzGyQb1e3+GBzPcolrf0LCOjoLeZ96psbP/V9H3v7SZvVN2+7rsatIqAj5nb1r+vqedNT6ltn1Ld+Up0CH6+uf0J98671rWZCVj38Rf/0up91njz9D2+ec4+9cXr7zdUPLHevv7Izc7Mrqp/1vbm6WfUexjXf7R7arIAeWG9D8ynlPX80vX1etfmi+hHNgJ5cf8Z2fuN7/frrS8dVWw+/dnpz3bOq7Xv0mUtXQAfNfqu317dfU23/WXuWm1WVu6z6W89ayMwGqX44sfX0o3Zz9f3141v7FxDQkVvMa6vvFF5f7f1YdQ+XLfyBoB8BHTFn1b+sH1Lfqp56VK8uv2Ojafs0rn9pfe+u9a3GObfTF5s3nDl5+h/eOOcO6zi4XNB1s+e1czZ9pv2/+oXndw+tN6Brvldrj3N1491Nu7cb0wjokZ1/3Qtqtd9VUbtb87Wdx5bWFHvm0hXQQbNvvgxySH27/sEdV1Z7n9XYW4Vjv4XMbJBqek+ob51QJfv3tY45zRPQUVvM71dHntfYff+7TPu3hT8Q9COgI+by+pf4Zjc0v3Xco/fqL+/Wc869u3VN37O44/DGOfeZxv4bqlcYjuq6WVWh5zRvWP3yzSHdd9Yb0MZP92rVt4h3bWzfv75dvT+xEdAvNXZfX3000QNbP4P7QPMOv1M9TXrp7LnM9T7Q3tlv0fwOtHouu3Z64+3V/TReUal9oV6IA9bPP7Ovt/2q92+sfa66x6ozjeds72tesZCAjtpiNp6Brj7ygitrDIeAjprqucqHmy/+Pntm/7qvvvN5j9qnOnE6zrlNbmld33POzTq8Oud2al19amt/+2br19a3/uxpDX9Uv7B598h6A/rQxu4HdmzPvMG7Cmj7Vx+Pr1/apVZ7Qf3PNe0x36115vfMZXZA+8+++RSr9qpWQKtf99m55xGdb2a3lLZX1npVT2O3q146anxC3SNnP95zv3991Bbz7q2J7v2UD1zTb8BsIAEdNdWzqSc3z5GvNneuf9sjtpk5zTvOuX3at+s85/odXt3fQa2jqzN69bqOm/2mzHZD18h6A9r8aMsqoEc3tnsCenjrpi+q+lCrPbn+5x3b91h9QNGhs+fSE9A5Z39g84Dqh6D1gB5X37hXzyM638wGBfTmKponNS5Uodr0d7Me77kDOmqL+cnVM5c3+uPXtH9Rn5SAjpov17+4d6/9rv4i8t7Nff9zaPOLfov7PbJ/QrrOub6HV+fcw1tHv7u6/pqOm/1Pn3PuJ10j2/CAPr510+q3Iaduabw2fGj7Hk+vX9xv9ly6Azr/7NsBrd4EekTPIzrfzAYF9MPV7t3vWblddeHCWY/33AEducX8zP6du7Zuv6eAkICOnDtVmao+Qu2FjT03VW9V2eRx7/ju+kaKBp9z/Q+vzrl7t46uvuntetJyZZ9z7gddA9vwgD6wddO/rV/aZtYz0KNaYxoU0AXMvh3Q6vctD6p1m29mgwL6mNk3PaL38R70K+ijt5j//bx7zrxrd/VX+o6aBRPQkVO9b+Yl1RvCv9PYc259e9vGhRfPf871P7w659o/Hjy9dal9sxuqM+o/BgxswwPaTuWT6pf2mfUz0CqTfzF7Ll0BXcDs2wGt3i20W8+455vZgIBe1/lW/aY1jfekLyygI7mY/3vBUbdpTmZh/8IIcxLQkfO1+hf2fXad/s8BzT0Pqu85o7F9/PznXP/DGy/cNn8z++bb1S8c2XWz6jXeCwcMbMMDOtX8sd/vqw8mOr5W+1B1F61X4b9XvYPxr2bPpSugC5h9O6Cvr2+s+lFj7xcPnHbo+gXMbE4Xzu5n692VCwvoqC7mzZ84sXrw95z7EBZCQEfPPq0z9SXNHbevX3hetXnVNvOfc/0Pb5xzD2oc/Kbqwmu7bva4dvymfeaV03pOwA0PaPUK+7RXl+b5/NvqfaD7N98H+uhq92dmz6UZ0KcudPbtgH6zusfmh85V/yrRPRcyszk9qF9A/6Tn8R74KXIjtZhPeuC01tyrl8S2W+ADwRwEdPS8oHXO/bC5ozoJ962/inr90WX+c67/4c1fXjmx/o6cd1TvctnyN103+7f61prGs8PvVy8+93xDGwS0nF7/dv2t1W9Vbl8fUXVil0ddN7257pxq+y7rZ8+lGdAnLHT27YA23qezSfV+ys9UT7H+ZiEzm8svq7s4ZWZH9Rxw1c+7H++BAR2pxfzT6s6ubfwd1UtSf7iwB4K5COjo+WbzlPvj1o5jqot7n/uP59ypcc0u9b1znnP9D2/9+vTujz39Ho1XEf6y+2aN+EydetF3Pvv86lNAdul+F1MU0HL7x5/WfPPhi+u7v9X4BLw7nP6Wcw5o7H5vn7k03wi+8+W/+OWCZj8T0HdWR0w97BVvOrn6m7b9+UJmNpfG74h+ZGbHB6odr+p54AYFdKQW8xXVoXv+zUX/ecmrD662X1LjVhHQEdT89I3zWpfPLz3W1H+fcM5zrv/hsz7AZ9/eD/D5ytqu6ze7tGdYGx7QLTrubv/G5xi9tmcUJ8zcdWdAn9S8+swFzX4moI23lrZNXbygmc3lj+tH36bjw6Cvrz5U6d49D9yggI7UYl59256b7frbBT4SzEFAR1D1tvOy6mety+vv2/6K3/YZ1R9vrQ045/ofXp1zq2bOnd2v6LlZrfb+zpNuq0/1DmvDA/qk+7Tv7vY/bk2u6/NAj71x5q47A/re5vVnLmj2HQH9zaGdd//82oJmNofGuykf07mr+sC5qStqCw/oSC3mf25VOm352QU+EsxFQEfQd6uv7vvN7LjykOZX/EHf/kj15+ZXD3rvdd/Dq3PumPO2bF51+JWzblarXXZA69Rafcy3Zg1rwwN68i8Oav11M+9c/9De7RN45zd03nVnQGsPbxxx5oJm3xHQ2o1ntcux98z7xAfPbA6N9r2nc9dbql0vqS08oKO1mN86vP3gl1WP/OZCHwnmIqCjqHoJ5fUdO9ZfcOQd1+72iPevr/228e87/GTQOdf38GbbrnzWAdttssejPtzvZtM3/NcT9tl2033+/Jzut9A3BAGt3fSWQ3baZI9HXtx5P+v+9ZS77rBm270e+7Ybuu66K6DrL7zvbmtuc7e3L2j2nQGt1X76ssN332zTP/iLN3X+g3cDZzaHqvRru/5lpV9UT/vqH6Oy0ICO2mJ+7YVH7Ln1Rmt3OPAp8jkEAsqiaAYUJpqAsigElJVAQFkUAspKIKAsCgFlJRBQFoWAshIIKItCQFkJBJRFIaCsBALKorjw76d9dLlHAYtLQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQiNdEB/9OyzAYblhdcNuVEjHdCzCsDwvGvIjRrpgD69HPF3AMNx9/LPQ27UiAf05cs9BGBiHCugABkBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAtrjB2/o8uar5rvLj3Tf4KIhjRRYeht6/gtoj0NLtzPmOf7KqZ4bfGlYYwWW2oae/wLa4x7lYSfOOLicNM/x3ypbdxx/4s7lk8MaK7DUNvT8F9Ae9yiXd1x6/QICulfnxUMEFMbXhp7/AtpDQGHlEtCBBBSYm4AOJKDA3AR0IAEF5iagAwkoMDcBHUhAgbkJ6EACCsxNQAcSUGBuAjqQgAJzE9CBBBSYm4AOJKDA3AR0oIUEtNv8Ae0hoDC2NvT8F9Aep3c/fqsvmOf4392u+wY7/mxIQwWW3Iae/wIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUIrbiAbrfHYrnN1EZrJtrqqeUewSJbtWq5R7DIJn6CU1su2uk9hy1WVkDPKwBDM/WpITdqpANau+IHi+aB5a8+MdH2KOcv9xAW15ry0eUewqJ6V9lxuYewuM4t91m883sOPxt2okY7oIvoEeU9yz2ExbVf+epyD2FxbVJ+v9xDWFRXlN2XewiL6yPl8OUewq0noJNKQMecgI4DAZ1UAjrmBHQcCOikEtAxJ6DjQEAnlYCOOQEdBwI6qQR0zAnoOBDQSSWgY05Ax4GATioBHXMCOg4EdFIJ6JgT0HEgoJNKQMecgI4DAZ1UAjrmBHQcCOikEtAxJ6DjQEAnlYCOOQEdBwI6qQR0zAnoOBDQSSWgY05Ax4GATioBHXMCOg4EdFIJ6JgT0HGwYgN6fLl0uYewuO4zdcVyD2Fx7bD5Lcs9hEX1q9V3Xe4hLK7Pl6OWewi33ooN6K8vWb/cQ1hcPxr2v/4yar7+38s9gkX2ue8v9wgW2aW/WO4R3HorNqAAt5aAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgJCAAoQEFCAkoAAhAQUICShASEABQgIKEBJQgNCKCehHn3DnrbY58PGf6nPVD56x12bbH/zaG5d8TEM15wSfXmZ8fhkGNiQ3vfKou2y254Oee3Wf6yZhBeee34QsYMOXNi4fm713fBdwhQT06oe1vgIf+6ve6964aeOaff9nOUY2JAMm+JCJOP8uu0tzCtudP+u6SVjBAfObjAVsuH7v0iegY7yAKyOgNx9WytT9z37qwdOL9ID13dddOFXKIWeetFMpe/R7cjMeBk1w77LFPVu+tjzDu/V+uU0pOz7x+U+64/Q8P95z3SSs4KD5TcQCNp1a+gR0nBdwZQT0jaVsfHF946PTi/Tqrquu2r6sfuf0n9c/uJSnLsfYhmLABNdtUh6+LGMaqieWctwN03/efHYpu/2+66qJWMEB85uMBWy4uPQJ6Fgv4MoI6PS3R+9tbH1kqmx7S+dVLyzlzGrjNzuVjf53yUc2JAMm+KNSzlmOIQ3VNVNl75urrXX3KuWLXddNwgoOmt9ELGDD/+1YVs8O6Fgv4IoI6HdKuWtre/rr8wud1+1bNvpZY+v5pbxuacc1NIMm+O+lvGXpRzRkny/lBc3N55bS/VPCSVjBQfObiAVsOKLscvzsgI71Aq6IgH6glCe3tk8s5aKOq6b/937v5uaXSnnw0o5raAZMsPaGUvq99WC8nF/KPzU3X1HK33ZeNRErOGB+k7GAldeVqUvPnBXQ8V7AFRHQt65d+7LW9mNL+WzHVReX8vTm5i2bltst7biGZsAEa88s5X+v/cQbX/7Ony39uIbmyk9/uvXmgqNLeXfnVROxggPmNxkLWPftzcrptdkBHe8FXBEB7XDTrmWq830+53a85nLnMnXdMgxpuHonWDuybHreDvWf3U8d++vlGtQQfWzLsn3XKk3YCs6a38Qs4E0HlL2u7xPQ8V7AlRbQF5fulzTPab/6Uqvdt5Qrl35EQ9Y7wdp+M28i3PETyzSoIfn0h9903EZlk4907ZygFew7v4lZwLPLmstrfQI63gu4wgL6mqmyyVc6d5xWyiWt7QeV8q2lH9JwzZrg+s1K2e7VP77hG+fvUsouv12ucQ3F1vWI3Osb3TsnaAX7zm9SFvATq8pf1/oFdLwXcEUF9AfT67PqPV27ji+l/b7lI0v5ryUf01D1meBPStnjx9XW1Qd2vNQ0lqrArDqy+9dVJmgF+85vQhbw6t3KgfW3180O6Hgv4AoK6LXP2aSUbf+le+eppbS/Y3pwKV9d6kENU98J3vKrX93Q3PzvVWXja5d8VEP0++u++8H7lbLzdzt3TtAK9p3fhCzgMWXz79X/nB3Q8V7AlRPQ9/3B9P/eH/rznr1nlfL+1vb01+4Pl3ZMQ9V/gp0OLuXfl2w4i+WUUh7VeXmCVrDSO79O47uA/1zKG6uN2QEd7wVcKQG95pHTdTmg97eMq5cA/6G1vXcp1yzpoIZprgl2OqGUf16i4Sye69eW1Td3XJ6YFWzqnV+nsV3Aa7ZqvcGz76vwY7yAKySgV+83/c3tP66ffcUHSzm7ubl+83LbJR3UMM05wU7PKeVtSzOcYbvs819ubx9QyhUdV03ECg6YX6exXcCflG7HdVw33gu4MgJ6w/T3Pg/o+83tD0u5f3PzG9PHLOGYhmruCV7+6c+0t4/p91FiY2H3svm61vaBpXyv46qJWMEB85uIBRwU0PFewJUR0GeW8ug5vi3aq6xtfoTWy0o5b+mGNFxzT/CBpVzW3Fx3x7JmTN8Gc3gp325urt+yrO56s/UkrOCA+U3EAl5zTssflnL0Oed0vVNkrBdwRQT0upBQrLkAAAMoSURBVG3KntfPcd1zS3lptXHTncpGP166MQ3VgAm+spS/aG6+brqySzak4XppKSc0N99QyqFd103CCg6Y32QsYNvsn4GO9wKuiICeX8q5Pbuuuuiii6p3h/xqy7LF5dN/rn9KKScu/dCGY8AEr9mhlKfXN9a/cYuyzbh9WFjL/21Wps6rPqXv3dNP0D5X35ioFRwwv8lYwLaZgE7GAq6IgJ5Syn73nfH9WvX5YeUn1ZXT8dnsKf/0qnuXcvtfLu8wc4Mm+P6NStnl8c8+dq/pHRcs7zBvhbdMj/5Oxz77+P1L64PfJmsFB8xvMhawZSagk7GAKyKgD+j+CXb9Bc+Z1audu1Fj915j9ktkHQZO8AM7NXdv9dblHeWtct4mzVls3XimNmErOGh+k7GATf0COs4LuCICeseBAa19+cQ91273R68Ys4+B6TR4gr999WG7bLzdgS+a9c/pjZXvP/+eO63d66HPaz1HmawVHDi/yVjAhr4BHeMFXBEBBVgMAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQgJKEBIQAFCAgoQElCAkIAChAQUICSgACEBBQj9f9BjM08p/x8IAAAAAElFTkSuQmCC" width="672" /></p>
+<pre class="r"><code>plot(var_importance_no_months,
+     main = &quot;Variable Importance - EstMonthsCustomer Removed&quot;)</code></pre>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAADAFBMVEUAAAABAQECAgIDAwMEBAQFBQUGBgYHBwcICAgJCQkKCgoLCwsMDAwNDQ0ODg4PDw8QEBARERESEhITExMUFBQVFRUWFhYXFxcYGBgZGRkaGhobGxscHBwdHR0eHh4fHx8gICAhISEiIiIjIyMkJCQlJSUmJiYnJycoKCgpKSkqKiorKyssLCwtLS0uLi4vLy8wMDAxMTEyMjIzMzM0NDQ1NTU2NjY3Nzc4ODg5OTk6Ojo7Ozs8PDw9PT0+Pj4/Pz9AQEBBQUFCQkJDQ0NERERFRUVGRkZHR0dISEhJSUlKSkpLS0tMTExNTU1OTk5PT09QUFBRUVFSUlJTU1NUVFRVVVVWVlZXV1dYWFhZWVlaWlpbW1tcXFxdXV1eXl5fX19gYGBhYWFiYmJjY2NkZGRlZWVmZmZnZ2doaGhpaWlqampra2tsbGxtbW1ubm5vb29wcHBxcXFycnJzc3N0dHR1dXV2dnZ3d3d4eHh5eXl6enp7e3t8fHx9fX1+fn5/f3+AgICBgYGCgoKDg4OEhISFhYWGhoaHh4eIiIiJiYmKioqLi4uMjIyNjY2Ojo6Pj4+QkJCRkZGSkpKTk5OUlJSVlZWWlpaXl5eYmJiZmZmampqbm5ucnJydnZ2enp6fn5+goKChoaGioqKjo6OkpKSlpaWmpqanp6eoqKipqamqqqqrq6usrKytra2urq6vr6+wsLCxsbGysrKzs7O0tLS1tbW2tra3t7e4uLi5ubm6urq7u7u8vLy9vb2+vr6/v7/AwMDBwcHCwsLDw8PExMTFxcXGxsbHx8fIyMjJycnKysrLy8vMzMzNzc3Ozs7Pz8/Q0NDR0dHS0tLT09PU1NTV1dXW1tbX19fY2NjZ2dna2trb29vc3Nzd3d3e3t7f39/g4ODh4eHi4uLj4+Pk5OTl5eXm5ubn5+fo6Ojp6enq6urr6+vs7Ozt7e3u7u7v7+/w8PDx8fHy8vLz8/P09PT19fX29vb39/f4+Pj5+fn6+vr7+/v8/Pz9/f3+/v7////isF19AAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3dB9wkdX348d817jiKtACKAQVBigURIxEVNYoGNREEBUXFAigiREFExG4sGAtYIhawt6hgFImKif9YUWKJGgEbir2gKM3j7va/M7Nldndmd+/L3rNz8n6/XnCzs+X5zuzs5/Z5dp+91AIgJM17AIANlYACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgQJKECQgAIECShAkIACBAkoQJCAAgTdfAK6etvUtnNpzc+yFenQqa792uyiW9Sff//s/CPX+WolT86n+fZUl/0LsSKNumi6q768e/nPddfcsFFnzb43cap1uM+6fnnOoXtvv9Et9znkbb+5iV98IW0xuOe3uPtj/23eIw34l2yqbeY9xQQ3n4C2npIfJt/tr3hrvuJDU135Lyugr/yntvMW5EuNs44BLU/dC+gruud+qbsmEtDyTa9zQH/6+MW98Zcc8bPAl5/PPTIU0MxBP17YEcYS0Gb5r/wQ+Zf+ikOy05teN9WV/7ICunf2pf5pQb7UOOsY0PLUvYD+Q/fcV9+UgJZvel0D+q6VAxuw2TmBrz+Xe6QioGnPVQs7wzgC2ixrts/ukPv0Tq/arDp6lQR0PZhFQHsPsEfMKaAvXzS0BYvOvokDLJSqgKaXLewM4whowxyf3SFL/9A9+Z/5AfPx6a77nr3b7lV/voAG5AFdufeAL9dfvDKg6fLOuTvOJ6Af6A2yabeki86/aQMslDygK4rdfuc9NiuG3/i3CzvEGALaMJ/Lj5APdE+enJ3ackbfsghoQB7Q/aa+eHVAzy1W/Ky3YkED+uPO07jDPnlt64ZLX1ic2un6mzTAQsmHvUP31Ko3Fj/Jff/CDjGGgDbM2h2ye+Sx3ZN7ZKeeNKPbXj8BXX3jTIYb8ZcS0K3b/x1drPhwe3GzZQse0McXT9u638f8/K/z0y+9SQNMMLODYjCgne/Q0nMXcILxBLRpTszvkTXFiR/lh8unixPXvOaI/W+97BY7P/SVV3Yu++TOg/uqU+604mvDj6rRi3cCeu2Z+2+3YtfDL1zbWT30YPzSSXfZbsVuB51e9UptKaAPKW7sWw/ZOG208+H5TwW/efztN9tq/6O/07nwftklntxa/e6/u9WK2x364fLT6DUfP+7O2y/bZs/Hvee6gZvubUv/yVs6edLWf+XY22++zb2O+Wrp9n/zxofebvMVOxx4xp/K04/bslrjArr63U+8744b73bgsR8q9uXQ1MXJh7b/26u4/DPbiw9YMRDQMXtiYLuGbrp7n1128l632OaAk35eP1Or9YvivVP979m/ln8fv3+22LmPCk/KTtxzum2rHn3yQZEZuR+GjuOy4YB+PJ/guNqbmm6CkdE/lt/suzpnfzY/9aaaL5H5+vF7bLLVXV70KwFtnC/md96XihNvyJa3XZ0trnrp1r0jeNkp+arugfe17JxLBktYdfEioJfu3ll97x8UFx0I6BX/0L3WRk+4amS4kYB+oPvGxif8ufWipZ0v96ziIVc8OK/6u84ldv9072Yu3Ks32/b/Wr7p3rYMP1zrt37Nszs/1lvyjO7jeM0/b967+XO6GZmwZbXGBPS9t+/NtMe7sxWVAc3+v6j4gvdsLz5/IKD1e2Jou6oD+qbOS1ybvLR2plbrZfmpw0qD53fJJmtaYwI6aduqR598UFTeD0PHcdlwQL+WX/OFtTc1zQQVo6/aMjtxeOf852Qnlv665ku0Wtef2LlvtvsvAW2atfkLDc8pTjw4W35qvnhcKjsiX1cceN/P2zIU0KqL5wF98C69tdtcmq8uX+2btyxda6+Rp2rDAb3dst6FT3pu/4rFQZk/OI+5f2/t4td3buWlA68JP/qGim0ZfrjWb/2z+qtPKW7++oeNXnbiltWqD+gzB2bKvkuvDOgFWc0/kV1h1cbtpU+WAzpmTwxtV2VAz+2vfEXdTK3WA/PlL5Umv+hJmd+26gM6cduqR598UFTeD0PHcdlwQM/Pr/f22puaYoLK0fNt37L4m7l1t+zEgXVfonXDA3urNn9i9n8BbZKTsrtk73zx+uwRV/weyzvToAuylcWBV/wdORjQyovff2hl2jk/dkpX+92tBs6/zfAzteGAlpQPys1/lV0if3CW34ay+OL8Rv516JrH9G+6ty2fOv74bbKlOx9//Hljt36T0tpl/5ff0jGDlz17qi2rVRvQC4ZmenNreOqiOf9xYPt/p2fX+Gq2D/5QCuiYPTG8XUM3nd9nS5f3L7PylzUztVbnL11vV711NQGdvG3Vo08+KCrvh6HjuGw4oPlFN/pZ7U1NnqB69M/ki8WvjP0uf6XqbXVfothPZQLaJBfn90n+g74Ls6Vb59955M8bVz7xde98bf6stPhuIz+aNk3dA69UwsqLdwN6y0c+5Q7FUv53culqR+bH3HGf+vZHDszPH37FYDSgmz7gqLt1j6NN73/UXYulj2SX2K+z+taPevIdi6X8wXlZ8bC/7VPOPukuxerzK7Zl8CWL+q1v2+XgR3c258Rs9afyxWWHnvGmY/Nv5FZcPs2W1cp7t8m+ZZflZ2Tfj6eNTvzIRe89Nn+X+q3WDE/dCegL2/+7b3b6de2FO7b6AR23J0a3a/RFpGzfPuwRnbdGnV03U/Fz9HtUb11NQCduW83okw+Kyvth5L7vGwzo6rfkbTuqVXtTkyeoHr14A/ap+Q1/MFtcdlXdlyjeWphue9RRO3W+goA2ym16j4enZUsnZUs/ze+o/8zPz19UvVO21HmoLX74i9/xxp+XS1h98U5AH/Pn9vJb858M7ZS9stO/2hVLssW35lfLX+5cdnlrwEhA98tC3/krfd/sV+zOzBdfnF2iE9AnZy+HnlN8U5X9IP+ofOnh17QX1zw7X75rxbYMPFzHbf3m782WX58v/31vK1demC1enH/VU6bZsloVb6T/Rrb+mvy5TfFCw0X56ouHpu4GNDt3k2wnPLq9cGwpoGP3xMh2VQR00cvaN7vqCfny4+pmuiRfeHT11lUHdPK21Yw+8aCovh9G7vu+4n2gxV9cd71T8f3MnX7Xqr2pyYdlzej5Y+1O/f3w4Novcd/8Sqe1n9esfXrxJQS0UU7J7pOHZkv5E6/8Vdj3LW3bszj/jGztrbOl4sDb/n86V+yXsPriRUDvX7pw/gbF/tWe1zuc2g+iv8pOPH9wtOGALvteqzfnkuLdTTt1H82dgB5c/nIvaLX+lEftzp0f6D8mdTdxaFsGHq7jtr7zSsm9s+XsU1iuzNc+u1ibH/V3nGbLatUF9Pv54pnFhe53h7b/GJq6G9A/ZQ/DbLt2bv/5zn5Ax++J4e2qCmjx0/FVt86W/75upk/mK0+v3rrqgE7ctrrRJx4U1ffDyH3fV/GbSA/KX92puamJE9SNXrx4+5NsZf6c/p11X+LS/ILHFmvzp6gC2iz5U4aV13fuqp2Hz/5Gfv+WEvLB7jmVbw4sXbwI6BeK9dfnPx4/bOBq9y4/1A7LTtx78MaGA1r8qLaVf39T/O3dul+2nL/ZtAho520p1+WfM/Wg7o/XPtq5wcvyv+PPGN2WuncdDm/9pp03fOXPJVa0F96b307x8ljrK9mDf5+1k7fs2z3Dv+Qy/hnokoPPvXLg4hUBbe3T/v9Zrdavs1Pf7wd07J4Y2a6qgHaeRR+cLfefOQ7N9B/5RV88vCML456Bjtm2utEnHhTV98PIfd83EtDeL6FW39TECepGX5snNnvWnT/sll9d9yXyJ7PLOh9o8u381gS0WfK/OT/R+eiJ0/rr1/zv+5/3yD2L46ifkOWru+cPBXTk4nlAt++efVx3fe9qa/PH9t//U+Hu2YlNBicbDujDitUPKi33362fPzh36V41/0Zzh1brBfnx15v5ztnJw0a3ZTSg1VvfeX7QOis7kYUm/92tWw7t0Ulbtrr/AH3t0FXrAtq6S/fkHk/76NWVU3cDmn13eHir9e/tP7Zt9QM6dk+MbFdFQFesKe3ae9bN9NV8xdGtSjU/A520bXWjTzooau6Hkfu+b/QZ6OIn5r9DVXNTEw/LutFb+dseso99eV33atVfIv88g95fv/lPWgW0WfJnHU/t3On/21m59t2Hblk6jPoJ2bN3vXJAqy6e397+3UvneV6ypnS1P4wcrCkN/sLfcEA7n1OaH6mdN9ENBfTA7lVfnD9IWq2nZn/u2rvF/NOmDhjdlqGA1m599/Xx/IeFWWiOyhbuNrRHJ23ZpIBWvQr//5b0r7T0b1//h9GpuwF9f/v/OxZ368NKAR27J0a2a8xvIvXDVzXTD/JTD6jYglZtQCdtW93okw6Kmvth5L7vq/owkfw382puauJhWTd66+vZ0iY3tFrZbz6k99V+iXyXPb57/UdlpwS0Wb6R3Sk7tf6UvYi8R2fdDw/o3IOb3jf/K3A0IQOPqsqL5wfRw7uXzl9rTFeXrvbDigPmpwOTrXtAH9e9av6exUWri58aHdC7xROyk3cc3ZbBXkze+l5o8jeBPmRoj07askhAW1/Yu3xzW1w4MnU3oPmPZa/MX3w4oxTQqfbEugW0aqb83afpduXJV1+TyZ6F1b0PdMK21Y0+6aCouR9G7vu+8qvwq374muLTRL7eqr2piYdl3eit1u2Le2tV9naAldfUfoldsz+e071+/mRHQBtmt+xe+Xb+nuEXFWtW5W9oWf7Y912+tkjR+IBWXzw/iHrvZ8m/ORx4BnplxQHzg4HB1j2gD+peNf99mC1HngEc1p1pXECn2PpeaLKXuvtPszsmbVkooO0nLc/bt/8+wyXfHJq6F9D8VYkPrM4emJ+vfwZavSfWMaBVM+U//lv0o9LcxWDZK+v1v8o5dtvqRp90UNTcD1MGtO2N+VWy38ioual1fQbaG73zzf0Jrf/O/si/qa/+ErfL/nhi9/qnZacEtGHy3554Rf6G8OI9h61XZstbFSdemi2PD2j1xfODqPfjwRO6p3pXuz4/RP5rzGDrHtDeoZo/Ovcc+RlU/qD8x9FtGejFFFvfC03+dpQdh+aetGXBgLb98tzDbtG55qFDU/cDekT7jxOz7ys2ur7+Z6DVe2KdAzo60wvzpVNLQ98nX5N9Y57fR8dOdzv1PwPtjT7poKi5H6YPaNG07J19NTc18bCsG73z4tEurdOzP/J/AqL6S+Q/C+19Yu/Ds1MC2jDfyo/k7N0p+3TWHNQ9blqd1wzGB7T64sWr8J3f6bvxNtmJgweulr/C/Z4xg617QBd1foZ7Q/4pU0/ofhpE91XQ7+VvR33h6LYM9GKKre+F5k3ZwuLOi6T/s1/bAWun2LJaEwLaduNnj1laPPZaNQHNhtv3TZ3b6QV0qj0RCejQTMW7GZf/X+/MLy/tVSm/jw7prH/o+NspDVA3+sSDovp+mD6ga/MvnL+RvvqmJk5QN3p3+y79m9T7JyAqv0T+U8/lnd/qvHa77JSANk3nxeb+v6Zz2+zE8/LFq7asTkj5UVV98SKgBxUXfkt+4g0DV3ts9yjLfOG1bUNHz7oHtPshFvlLm9nB+Mf8fXh7d96Hlx+N+TurqgN64rRb3wvN/+W3+Ixibf5PTO07zZbVqgvokx7U1r2R/B0NWw9N3Q9o9vrE0kNT8ZdAL6BT7YnhgHZuujqgNTM9Mr/pnbo/s+h8nN3Ls+X81ydvU3zy2882n3A7/QHqRp94UFTfD+sa0Pzn+NU3NXGCutHbXpEtn579rtOjihWVXyL/0Vc6vlj5kvyEgDbNC1LHjzor8qLulb1wfN3hqToh5UdV9cU7v4l0TPZ4eV/+ON7sDwNXy98yuKz42/n7+Rs3h76hDQQ0nZB9u/TO/Lcqt8kmyo/K9Mhr24trTs2X77B2dFs6D9fHT7v1/dDkb8FZnr+p8Av584t/nmbLatUF9AH5TNcUJ/JXtv5maOp+QNdkr31ks3y4VQroVHtiOKCdm64OaM1Mlxb/INImL76iXaCfvKR4IWab/A2v+Zu+0mnZ+6G+Wbx3acztlAaoGX3iQVF9P0wf0D/nXyt/DlB9U5MPy5rR267Ifuib76vOE9TKL3FZfp3iWetZxSc9CWjTFE+jUvrb7ooj8pN7vPLtp+5WnLNDtrY2oNUX7/4u/E6POeGuxQsEzxm8WhGfRcedf9kXn58fuTsMfWx5JKDpto87vvO+wvxD175bfNTY7U5426n7FKs/VLEtnXcx3/KSX/1mqq3vh+b9+SUWHfKatzw5/0pb/WKaLauV927wd+H3zf7ZlNfkX2aXfz7/vy983b3y5VcMTd0PaFGktp+3ygGdZk+UAlq+6eqA1szU+W6jbevbbdxdfEd+TvGPvqbbH/nYu3deMhpzO6UBakaffFBU3g/rGtDil+kqb2ryBDWjZ+7R2Te3uKGzovJL/G1xod2OPrb7qXgC2jidT984s3v6nDRkWXYf1wa0+uIjn8a01/CnMX1z8G3jKz81NNa6B3TT0s3tXXyr+IahKY7u33T5QdT9zJuTp9r6UmgOGbjoogum2rJaFW+kT5u21//+VkMrb/3HoalLAX1BsfK2vRvcd9o9Udqu8k1XB7Rmps6bxAd0fr/mqr8qrdtkwu2UB6geffJBUXk/rOu38PvX36WTJ6gZPXNWZ83juisqv8THR3amgDZO/rbztLj3yQpr79O7t7Z6Rv5H9ru6tQGtvnh+EPX/efC00xVDV2u1zisfMZt/bnisdQ/ok+7Zu7nb/qS7cQOfx3jkn/s3XX4Qfahz/slTbX0pNH84oHzzz29NtWW16gLa+u/NB9Zt9sXhqUsB/XSx8tG9G9x32j1R2q7yTde8iFQ9U9tZywbOWP6q7hmljxQ96PETbqc8QPXoU+Sr6n6YPqDF6a1btTc1xQTVo2d+0fn9gU/01lQeNUf0V630Rvpmujy/e+7bX3HlvTt32f6XFp8Oscnvx72RvvLi+UF0xJmdf9owHXjlyNVarYv36R4bS4747shY6x7QJ/9q/+6X679z/eN79I7AW55dvumBB9HDi0ucPNXWl0LT+vMpvcN+jwt7Nzd+y2rVBrT13QP7axY/ovsid2nqfkD/VDwy39C7we4n0k/cE+XtKt103avw1TO1XV56Xr7kkG/31q89o/svxh/6x4m3UxqgevRp8lVxP6xDQIsfhry49qammaBy9FzxrydsVfrXZyqPmnO6/7rqlhf4RPqGyn9g/6bSirXnHrzrih0PPW9t64/Fv24x+hscA7/KWXHxzkF05bP32Xr5zo/8RNXV2lf82NF7brXxnv9w6uBb6AuBgLZWve3e2y/f+REXlG9nzceecqdtl221+2Peff3ATQ88iNa+5z47LrvFnd871daXQ9Nq/exVB+60cuO//se3lP9lsbFbVqs+oK3Wt170kF22WLpi2/2e1k9Vaep+QFvFw/DrvRvsBnTinihvV+mm69/GVDVT7kdnHbTn1sv+avfDzrpiYP0PT/i7W624zaEfn+J2yvdI5ehT5Wv0fliHgL6juAdqb2qqCapGzxU/LB74Rxwrj5pV//ao3VZucYfTfurfRGK9GfgtF2BOBHSDJKDQBAK6QRJQaAIB3SAJKDSBgG6QBBSaQEA3SAIKTSCgGyQBhSYQ0A3Se/6l7dPzngJu7gQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIEhAAYIEFCBIQAGCBBQgSEABggQUIKjRAf3xac8CmJUXXTvjRjU6oKckgNn5wIwb1eiAPj095OUAs3GX9K4ZN6rhAX31vEcA/mIcKaAAMQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoEN+cPaAt161IHMBTbCuj38BHXJAGnTSgswFNMG6Pv4FdMhd0yHH9N0rHbsgcwFNsK6PfwEdctd0SenUmwQUbkbW9fEvoEMEFG6+BHQsAQXqCehYAgrUE9CxBBSoJ6BjCShQT0DHElCgnoCOJaBAPQEdS0CBegI6loAC9QR0LAEF6gnoWAIK1BPQsaYJ6CABhZuPdX38C+iQEwb335JzF2IsoBHW9fEvoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAJsvgCIAAAwZSURBVEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChB0swvo1jtX2nLR0mWNt3RDGHLZoiXznmAKixfPe4IpbBBDLlk07wmmsHTxdtWP+5ts05tXQM9MADOz6HMzblSjA9q64gfVDk8nfbbxnpYePu8RJnt12mfeI0x2Xtpy3iNMYct03rxHmGyf9Op5jzDZoem5NQ/8m+zns05UswNa55h09rxHmOzMdMK8R5jsM+l+8x5hsl+lbec9whS2Tb+a9wiT3S99Zt4jTHZieu28R5iagK43AjorAjozAjpjArreCOisCOjMCOiMCeh6I6CzIqAzI6AzJqDrjYDOioDOjIDOmICuNwI6KwI6MwI6YwK63gjorAjozAjojAnoeiOgsyKgMyOgMyag642AzoqAzoyAzpiArjcCOisCOjMCOmMCut4I6KwI6MwI6IwJ6HojoLMioDMjoDMmoOuNgM6KgM6MgM6YgK43AjorAjozAjpjArreCOisCOjMCOiMCeh6I6CzIqAzI6AzJqDrjYDOioDOjIDO2IYZ0JPT++c9wmRvT6fPe4TJLkkHz3uEyf60bNd5jzCFXZf9ad4jTHZwumTeI0z23HTuvEeY2oYZ0D9+fPW8R5jsxo9dM+8RpnDRL+c9wRS+ctm8J5jCZV+Z9wRT+OVF855gCtd87MZ5jzC1DTOgAA0goABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChC0YQT004+//eZb7ve4z1Wc9YNn7L5ym3u94c8LPtOI2iGfnvq+PIfBSla99rA7rNzloOf+vuK8xuzJ+iEbtCc7vrZRumh0bWN2ZaFqyObsyrGTNGxPjtoQAvr7Q7r79zG/HT7vzRsX5+z1w3lMVjJmyIc25li9+A6dMbY+Z+S8xuzJMUM2Z092XLdHqghoY3ZloXLI5uzKcZM0bE9W2AACeuP9U1p0v2edeK/2jnzg2sHz3rMopXuffOz2Ke1c9aRq4Ywbco+06b5d35rPeIXfbJnSdk98/pN2bc/6n0PnNWZPjhuyMXuy67hU0abG7MqOyiGbsyvHTNK0PVlhAwjom1Pa6IJs4dPtHfm6gbOu2iYteX/7z+senNKJ85itZ8yQa5anh89lphFPTOmo69t/3vislHa8YeCs5uzJMUM2Z092XJAq2tScXVmoHLI5u3LMJE3bk1U2gIC2v6P7ULH0yUVpq9Xls16U0sn5wh+2T0t/ueCTlYwZ8scpnTqPkUZcvSjtcWO+tOZuKf3PwHmN2ZPjhmzMnuz49XZpyWibGrMrC9VDNmdXjpmkYXuyUvMDellKd+outx9SXymft1da+vNi6fkpvXFh5xowbsjPpPS2hZ+owpdTekFn8bkpDf6AsTF7ctyQjdmTHQ9JOzxhtE2N2ZWF6iGbsyvHTNKwPVmp+QH9aEpP7S4fk9L5pbPaf3ndo7P4tZQevLBzDRgzZOvslKrePrDwzknpHZ3F16T0svJZzdmTY4Zszp4svDEt+tTJI21qzq7MVQ/ZoF1ZP0nD9mS15gf0nStWvKq7/JiUvlg664KUnt5ZXL1xus3CzjVgzJCtZ6b0y2s+++ZXv//nCz/XgCs///nuGwQOT+mD5bOasyfHDNmcPZm7dGU6oTXapubsykzNkA3alfWTNGtP1mh+QEtW3TotKr9H6JWl12tunxZdO4eRRg0P2To4bXzmttkP8hcd+bt5DTXkos3SNgN7q4l7cmTIZu3JVfuk3a+raFOjdmXdkA3alfWTNGpP1tmgAvrSNPiC3am9V25arfukdOXCT1RheMjWHftvc9vus3MaquTzn3jLUUvT8k8OrGzanqwcsll78llp2SWtijY1alfWDdmgXVk/SaP2ZJ0NKaCvX5SWf7O84viULuwuH5TSdxd+pFEjQ65dmdLWr/vJ9d85Z4eUdvjjvObq2SI7VO/2ncGVTduTlUM2ak9+dnF6SauqTU3albVDNmdXjpmkSXuy1oYT0B+09+HifxtY9YSUem+1Pjilry74TCMqhvxpSjv/JF/6/X6ll5rmJm/T4oMHf7WjaXuycsgm7cnf75j2y96sNtqmBu3K+iGbsyvHTNKgPVlvQwnoNacvT2mrDw+uPC6l3jd5D07pfxd6qGGVQ67+7W+v7yx+fXHa6JoFn2rIDdde/u/3TemWl5dXNm1PVg7ZpD15RNrke9mfo21q0K6sH7I5u3LMJA3ak/U2kIB+5K/bz0ge9ouhtaekdF53uf1w+9HCzjSiesiye6X0mQUbZ5ynpPTI8umG7cnC8JBlc96T70rpzfnCaJuasyvHDFnWmINyeJLm7MkxNoiAXv2Idpn2Gf7F6Pxlun/tLu+R0tULOtSwuiHLjk7pXQs0znjXrUhLbiydbtSe7Boesmy+e/LqzbtvS6x8Fb4Zu3LckGWNOSiHJ2nMnhxnQwjo7+/Y/sb47WtHz/j3lJ7VWVy7SbrVgg41rHbIstNTevfCjFPl4i9/o7e8T0pXlM5qzp4cM2TZfPfkT9Ogo0rnNWZXjhuybL67smxoksbsyXE2gIBe335m/8DKb4x/lNL9OovfaV9mAWcaUT/kJZ//Qm/5iLFPBda3ndIma7rL+6X0vdJZzdmTY4Zszp4c16bG7MpxQzZnV46ZpDF7cpwNIKDPTOlRNd/J7Z5WdD7m6lUpnblwI42qH/JBKV3cWVyza1o2x7eMHJjSpZ3FtZulJQNvTG7MnhwzZHP25NWndv1NSoefeurA+y6asivHDdmcXTlukqbsyXGaH9Brt0y7XFdz3nNTOiNfWLVbWvqThZtpxJghX5vSP3YW39iu7IKNNOqMlI7uLJ6d0gED5zVmT44Zsjl7sq/ix4uN2ZU9o0M2Z1eOm6R5e3JU8wN6TkqvHFp11fnnn5+/9+G3m6VNL2n/ufZpKR2z8KP1jRny6m1Tenq2sPbNm6Yt5/mhXL9emRadmX/S3gfbz+2+VB6yOXtyzJDN2ZN9/TY1b1f2jA7ZnF1ZMUmD9+So5gf0KSnd8T5932/lH3mWfpqf2Q7Xyqe946x7pHTb3zR1yPOWprTD4047cvf2inPnOWTrbe0JdjvytCfsnbqfGde8PTluyObsyZ5+mxq4K7sqhmzOrhydpMF7clTzA/rAwR+FZ6/R9vdw65VLi9W7z/cXvcYO+dHtO6s3f+dch2y1zlzemWSL4kleA/fk2CGbsye7qgLanF3ZUTVkc3blyCQN3pOjmh/QXccGtPWNY3ZZsfXdXzPnj2oZP+QfX3f/HTbaer8Xj/yTeAvu+8/fd/sVuz/sed2/z5u3J1tjh2zOnuyoDGhzdmWhcsjm7MrhSRq8J0c1P6AADSWgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKEPT/AYvHqeuOD6ZjAAAAAElFTkSuQmCC" width="672" /></p>
+</div>
+<div id="exploration-of-variable-importance" class="section level2">
+<h2>Exploration of Variable Importance</h2>
+<p>Now that we have all of the metrics related to the LR model we can look at the variable importance and any corelation problems. To check these we look at corelation matrices, variance inflation factors, and the determinant of the correlation matrices.</p>
+<pre class="r"><code># Check correlations between predictors
+cor_matrix_all_vars &lt;- cor(lattes[, c(&quot;Age&quot;, &quot;EstMonthsCustomer&quot;, &quot;EstSalary&quot;)]) # nolint
+print(cor_matrix_all_vars)</code></pre>
+<pre><code>##                         Age EstMonthsCustomer EstSalary
+## Age               1.0000000         0.8194954 0.9229264
+## EstMonthsCustomer 0.8194954         1.0000000 0.8865444
+## EstSalary         0.9229264         0.8865444 1.0000000</code></pre>
+<pre class="r"><code>cor_matrix_age_sal &lt;- cor(lattes[, c(&quot;Age&quot;, &quot;EstSalary&quot;)]) # nolint
+print(cor_matrix_age_sal)</code></pre>
+<pre><code>##                 Age EstSalary
+## Age       1.0000000 0.9229264
+## EstSalary 0.9229264 1.0000000</code></pre>
+<pre class="r"><code>cor_matrix_months_sal &lt;- cor(lattes[, c(&quot;EstMonthsCustomer&quot;, &quot;EstSalary&quot;)]) # nolint
+print(cor_matrix_months_sal)</code></pre>
+<pre><code>##                   EstMonthsCustomer EstSalary
+## EstMonthsCustomer         1.0000000 0.8865444
+## EstSalary                 0.8865444 1.0000000</code></pre>
+<pre class="r"><code># Variance Inflation Factors (VIF)
+
+vif(late_donut_lr_model)</code></pre>
+<pre><code>##               Age EstMonthsCustomer         EstSalary 
+##          1.152303          1.003551          1.149028</code></pre>
+<pre class="r"><code># Find determinant of correlation matrix
+det_corr_all_vars &lt;- det(cor_matrix_all_vars)
+cat(&quot;Determinant of correlation matrix:&quot;, det_corr_all_vars, &quot;\n&quot;)</code></pre>
+<pre><code>## Determinant of correlation matrix: 0.0317204</code></pre>
+<pre class="r"><code>det_corr_age_sal &lt;- det(cor_matrix_age_sal)
+cat(&quot;Determinant of correlation matrix:&quot;, det_corr_age_sal, &quot;\n&quot;)</code></pre>
+<pre><code>## Determinant of correlation matrix: 0.1482068</code></pre>
+<pre class="r"><code>det_corr_months_sal &lt;- det(cor_matrix_months_sal)
+cat(&quot;Determinant of correlation matrix:&quot;, det_corr_months_sal, &quot;\n&quot;)</code></pre>
+<pre><code>## Determinant of correlation matrix: 0.214039</code></pre>
+</div>
+<div id="validate-the-model-all-variables" class="section level2">
+<h2>Validate the Model (<strong><em>all variables</em></strong>)</h2>
+<p>At this point we have trained the LR model using the 80% training data from the split and now we want to make predictions based on the 20% split where we know the outcomes. We use the trained model (late_donut_lr_model), feed in the 20% split (test_latte_donut), and set the type to “response” to ensure we get probability values from 0 to 1. This is accomplished by using the inverse of the logit function where p = e^(logit) / (1 + e^(logit)). We then set the prediction threshold of 0.5 where values &gt; 0.5 are classified at 1 and &lt; 0.5 are 0. Those predictions are then converted to both a factor and then a single column vector.</p>
+<p><strong>Note: Subsequent validations were completed after the initial validation to analyze other combinations of variables and noted below.</strong></p>
+<pre class="r"><code># Runs the LR model with predict () using the model we trained
+raw_pred_all_vars &lt;- predict(late_donut_lr_model,
+                      newdata = test_latte_donut,
+                      type = &quot;response&quot;)
+
+# Sets prediction threshold
+raw_pred_all_vars &lt;- ifelse(raw_pred_all_vars &gt; 0.5, &quot;1&quot;, &quot;0&quot;)
+
+# Convert to factor for comparison
+raw_pred_all_vars &lt;- as.factor(raw_pred_all_vars)</code></pre>
+</div>
+<div id="validate-the-model-estmonthscustomer-removed" class="section level2">
+<h2>Validate the Model (<strong><em>EstMonthsCustomer removed</em></strong>)</h2>
+<pre class="r"><code># Runs the LR model with predict () using the model we trained
+pred_simple_vars &lt;- predict(model_no_months,
+                            newdata = test_latte_donut,
+                            type = &quot;response&quot;)
+
+# Sets prediction threshold
+pred_simple_vars &lt;- ifelse(pred_simple_vars &gt; 0.5, &quot;1&quot;, &quot;0&quot;)
+
+# Convert to factor for comparison
+pred_simple_vars &lt;- as.factor(pred_simple_vars)</code></pre>
+</div>
+<div id="validate-the-model-estsalary-only" class="section level2">
+<h2>Validate the Model (<strong><em>EstSalary only</em></strong>)</h2>
+<pre class="r"><code># Runs the LR model with predict () using the model we trained
+pred_salary_only &lt;- predict(model_salary_only,
+                            newdata = test_latte_donut,
+                            type = &quot;response&quot;)
+
+# Sets prediction threshold
+pred_salary_only &lt;- ifelse(pred_salary_only &gt; 0.5, &quot;1&quot;, &quot;0&quot;)
+
+# Convert to factor for comparison
+pred_salary_only &lt;- as.factor(pred_salary_only)</code></pre>
+</div>
+<div id="validate-the-model-estmonthscustomer-estsalary-only" class="section level2">
+<h2>Validate the Model (<strong><em>EstMonthsCustomer + EstSalary only</em></strong>)</h2>
+<pre class="r"><code># Runs the LR model with predict() using the model we trained
+pred_months_sal &lt;- predict(model_no_age,
+                          newdata = test_latte_donut,
+                          type = &quot;response&quot;)
+
+# Sets prediction threshold
+pred_months_sal &lt;- ifelse(pred_months_sal &gt; 0.5, &quot;1&quot;, &quot;0&quot;)
+
+# Convert to factor for comparison
+pred_months_sal &lt;- as.factor(pred_months_sal)</code></pre>
+</div>
+<div id="model-results-and-metrics" class="section level2">
+<h2>Model Results and Metrics</h2>
+<p>A confusion matrix and statistics, metrica metrics summary with it’s own confusion matrix were used for models including all the variables, ESTMONTHSCUSTOMER removed, AGE removed, and then ESTSALARY on its own.</p>
+<pre class="r"><code># Create confusion matrix for original df w/ all variables
+conf_matrix_all_vars &lt;-
+  confusionMatrix(data = raw_pred_all_vars,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = &quot;prec_recall&quot;)
+
+# Create confusion matrix for simple df w/ EstMonthsCustomer removed
+conf_matrix_simple_vars &lt;-
+  confusionMatrix(data = pred_simple_vars,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = &quot;prec_recall&quot;)
+
+# Create confusion matrix for salary only
+conf_matrix_salary_only &lt;-
+  confusionMatrix(data = pred_salary_only,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = &quot;prec_recall&quot;)
+
+# Create confusion matrix for months and salary
+conf_matrix_months_salary &lt;-
+  confusionMatrix(data = pred_months_sal,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = &quot;prec_recall&quot;)
+
+print(conf_matrix_all_vars)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  0  1
+##          0 75  5
+##          1  0 30
+##                                           
+##                Accuracy : 0.9545          
+##                  95% CI : (0.8971, 0.9851)
+##     No Information Rate : 0.6818          
+##     P-Value [Acc &gt; NIR] : 1.519e-12       
+##                                           
+##                   Kappa : 0.8911          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.07364         
+##                                           
+##               Precision : 0.9375          
+##                  Recall : 1.0000          
+##                      F1 : 0.9677          
+##              Prevalence : 0.6818          
+##          Detection Rate : 0.6818          
+##    Detection Prevalence : 0.7273          
+##       Balanced Accuracy : 0.9286          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>print(conf_matrix_simple_vars)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  0  1
+##          0 75  5
+##          1  0 30
+##                                           
+##                Accuracy : 0.9545          
+##                  95% CI : (0.8971, 0.9851)
+##     No Information Rate : 0.6818          
+##     P-Value [Acc &gt; NIR] : 1.519e-12       
+##                                           
+##                   Kappa : 0.8911          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.07364         
+##                                           
+##               Precision : 0.9375          
+##                  Recall : 1.0000          
+##                      F1 : 0.9677          
+##              Prevalence : 0.6818          
+##          Detection Rate : 0.6818          
+##    Detection Prevalence : 0.7273          
+##       Balanced Accuracy : 0.9286          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>print(conf_matrix_salary_only)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  0  1
+##          0 75  5
+##          1  0 30
+##                                           
+##                Accuracy : 0.9545          
+##                  95% CI : (0.8971, 0.9851)
+##     No Information Rate : 0.6818          
+##     P-Value [Acc &gt; NIR] : 1.519e-12       
+##                                           
+##                   Kappa : 0.8911          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.07364         
+##                                           
+##               Precision : 0.9375          
+##                  Recall : 1.0000          
+##                      F1 : 0.9677          
+##              Prevalence : 0.6818          
+##          Detection Rate : 0.6818          
+##    Detection Prevalence : 0.7273          
+##       Balanced Accuracy : 0.9286          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>print(conf_matrix_months_salary)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  0  1
+##          0 74  6
+##          1  1 29
+##                                          
+##                Accuracy : 0.9364         
+##                  95% CI : (0.8733, 0.974)
+##     No Information Rate : 0.6818         
+##     P-Value [Acc &gt; NIR] : 9.02e-11       
+##                                          
+##                   Kappa : 0.8475         
+##                                          
+##  Mcnemar&#39;s Test P-Value : 0.1306         
+##                                          
+##               Precision : 0.9250         
+##                  Recall : 0.9867         
+##                      F1 : 0.9548         
+##              Prevalence : 0.6818         
+##          Detection Rate : 0.6727         
+##    Detection Prevalence : 0.7273         
+##       Balanced Accuracy : 0.9076         
+##                                          
+##        &#39;Positive&#39; Class : 0              
+## </code></pre>
+<pre class="r"><code># ***All variables model***
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+obs_all_vars &lt;- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_all_vars &lt;- as.numeric(paste(raw_pred_all_vars))
+data_all_vars &lt;- data.frame(cbind(obs_all_vars, pred_all_vars))
+
+# ***All variables model***
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data_all_vars,
+  obs = obs_all_vars,
+  pred = pred_all_vars,
+  pos_level = 1,
+  type = &quot;classification&quot;
+)</code></pre>
+<pre><code>##         Metric      Score
+## 1     accuracy 0.95454545
+## 2   error_rate 0.04545455
+## 3    precision 0.93750000
+## 4       recall 1.00000000
+## 5  specificity 0.85714286
+## 6       balacc 0.92857143
+## 7       fscore 0.96774194
+## 8          agf 0.97724536
+## 9        gmean 0.92582010
+## 10        khat 0.89108911
+## 11         mcc 0.89642146
+## 12         fmi 0.96824584
+## 13         bmi 0.85714286
+## 14         csi 0.68181818
+## 15      deltap 0.93750000
+## 16       posLr 7.00000000
+## 17       negLr 0.00000000
+## 18         dor        Inf
+## 19         npv 1.00000000
+## 20         FPR 0.14285714
+## 21         FNR 0.00000000
+## 22         FDR 0.06250000
+## 23         FOR 0.00000000
+## 24      preval 0.68181818
+## 25    preval_t 0.48074070
+## 26     AUC_roc 0.64285714
+## 27          p4 0.94488189</code></pre>
+<pre class="r"><code># ***All variables model***
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data_all_vars,
+  obs = obs_all_vars,
+  pred = pred_all_vars,
+)</code></pre>
+<pre><code>##          OBSERVED
+## PREDICTED  0  1
+##         0 75  5
+##         1  0 30</code></pre>
+<pre class="r"><code># ***Age+Salary model***
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+obs_age_sal &lt;- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_age_sal &lt;- as.numeric(paste(pred_simple_vars))
+data_age_sal &lt;- data.frame(cbind(obs_age_sal, pred_age_sal))
+
+# ***Age+Salary model***
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data_age_sal,
+  obs = obs_age_sal,
+  pred = pred_age_sal,
+  pos_level = 1,
+  type = &quot;classification&quot;
+)</code></pre>
+<pre><code>##         Metric      Score
+## 1     accuracy 0.95454545
+## 2   error_rate 0.04545455
+## 3    precision 0.93750000
+## 4       recall 1.00000000
+## 5  specificity 0.85714286
+## 6       balacc 0.92857143
+## 7       fscore 0.96774194
+## 8          agf 0.97724536
+## 9        gmean 0.92582010
+## 10        khat 0.89108911
+## 11         mcc 0.89642146
+## 12         fmi 0.96824584
+## 13         bmi 0.85714286
+## 14         csi 0.68181818
+## 15      deltap 0.93750000
+## 16       posLr 7.00000000
+## 17       negLr 0.00000000
+## 18         dor        Inf
+## 19         npv 1.00000000
+## 20         FPR 0.14285714
+## 21         FNR 0.00000000
+## 22         FDR 0.06250000
+## 23         FOR 0.00000000
+## 24      preval 0.68181818
+## 25    preval_t 0.48074070
+## 26     AUC_roc 0.64285714
+## 27          p4 0.94488189</code></pre>
+<pre class="r"><code># ***Age+Salary model***
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data_all_vars,
+  obs = obs_all_vars,
+  pred = pred_all_vars,
+)</code></pre>
+<pre><code>##          OBSERVED
+## PREDICTED  0  1
+##         0 75  5
+##         1  0 30</code></pre>
+<pre class="r"><code># ***Salary only model***
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+obs_sal_only &lt;- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_sal_only &lt;- as.numeric(paste(pred_salary_only))
+data_sal_only &lt;- data.frame(cbind(obs_sal_only, pred_sal_only))
+
+# ***Salary only model***
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data_sal_only,
+  obs = obs_sal_only,
+  pred = pred_sal_only,
+  pos_level = 1,
+  type = &quot;classification&quot;
+)</code></pre>
+<pre><code>##         Metric      Score
+## 1     accuracy 0.95454545
+## 2   error_rate 0.04545455
+## 3    precision 0.93750000
+## 4       recall 1.00000000
+## 5  specificity 0.85714286
+## 6       balacc 0.92857143
+## 7       fscore 0.96774194
+## 8          agf 0.97724536
+## 9        gmean 0.92582010
+## 10        khat 0.89108911
+## 11         mcc 0.89642146
+## 12         fmi 0.96824584
+## 13         bmi 0.85714286
+## 14         csi 0.68181818
+## 15      deltap 0.93750000
+## 16       posLr 7.00000000
+## 17       negLr 0.00000000
+## 18         dor        Inf
+## 19         npv 1.00000000
+## 20         FPR 0.14285714
+## 21         FNR 0.00000000
+## 22         FDR 0.06250000
+## 23         FOR 0.00000000
+## 24      preval 0.68181818
+## 25    preval_t 0.48074070
+## 26     AUC_roc 0.64285714
+## 27          p4 0.94488189</code></pre>
+<pre class="r"><code># ***Salary only model***
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data_sal_only,
+  obs = obs_sal_only,
+  pred = pred_sal_only,
+)</code></pre>
+<pre><code>##          OBSERVED
+## PREDICTED  0  1
+##         0 75  5
+##         1  0 30</code></pre>
+<pre class="r"><code># ***Months+Salary model***
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+obs_months_sal &lt;- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_months_sal &lt;- as.numeric(paste(pred_months_sal))
+data_months_sal &lt;- data.frame(cbind(obs_months_sal, pred_months_sal))
+
+# ***Months+Salary model***
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data_months_sal,
+  obs = obs_months_sal,
+  pred = pred_months_sal,
+  pos_level = 1,
+  type = &quot;classification&quot;
+)</code></pre>
+<pre><code>##         Metric        Score
+## 1     accuracy   0.93636364
+## 2   error_rate   0.06363636
+## 3    precision   0.92500000
+## 4       recall   0.98666667
+## 5  specificity   0.82857143
+## 6       balacc   0.90761905
+## 7       fscore   0.95483871
+## 8          agf   0.95439293
+## 9        gmean   0.90417023
+## 10        khat   0.84752475
+## 11         mcc   0.85259641
+## 12         fmi   0.95533589
+## 13         bmi   0.81523810
+## 14         csi   0.67889908
+## 15      deltap   0.89166667
+## 16       posLr   5.75555556
+## 17       negLr   0.01609195
+## 18         dor 357.66666667
+## 19         npv   0.96666667
+## 20         FPR   0.17142857
+## 21         FNR   0.01333333
+## 22         FDR   0.07500000
+## 23         FOR   0.03333333
+## 24      preval   0.68181818
+## 25    preval_t   0.47818521
+## 26     AUC_roc   0.56934813
+## 27          p4   0.92251478</code></pre>
+<pre class="r"><code># ***Months+Salary model***
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data_months_sal,
+  obs = obs_months_sal,
+  pred = pred_months_sal,
+)</code></pre>
+<pre><code>##          OBSERVED
+## PREDICTED  0  1
+##         0 74  6
+##         1  1 29</code></pre>
+<pre class="r"><code>print(&quot;Odds Ratios with 95% Confidence Intervals:&quot;)</code></pre>
+<pre><code>## [1] &quot;Odds Ratios with 95% Confidence Intervals:&quot;</code></pre>
+<pre class="r"><code>exp(confint(model_no_months))</code></pre>
+<pre><code>## Waiting for profiling to be done...</code></pre>
+<pre><code>##                    2.5 %       97.5 %
+## (Intercept) 6.815206e-09 1.100498e-05
+## Age         1.004007e+00 1.150097e+00
+## EstSalary   1.000107e+00 1.000233e+00</code></pre>
+<pre class="r"><code># Point estimate for 5-year increase
+age_5_year_odds_ratio &lt;- exp(0.07032 * 5)
+print(paste(&quot;5-year age increase OR:&quot;, age_5_year_odds_ratio))</code></pre>
+<pre><code>## [1] &quot;5-year age increase OR: 1.42133987404661&quot;</code></pre>
+<pre class="r"><code># Point estimate for $10,000 increase
+salary_10k_odds_ratio &lt;- exp(0.0001646 * 10000)
+print(paste(&quot;$10,000 salary increase OR:&quot;, salary_10k_odds_ratio))</code></pre>
+<pre><code>## [1] &quot;$10,000 salary increase OR: 5.18619350822413&quot;</code></pre>
+</div>
+<div id="new-data-lr-predictions" class="section level2">
+<h2>New Data LR Predictions</h2>
+<p>This chunk uses the model with with Age and EstSalary to make predictions on the new data. It adds two columns to the initial data field, prints and saves to CSV file for viewing.</p>
+<pre class="r"><code># Train new data without known predictions with months removed
+coffee_donut_prediction &lt;- predict(model_no_months,
+                                   newdata = lattes_new,
+                                   type = &quot;response&quot;)
+
+# Creates new column vector to hold the new probabilities
+lattes_new$LR_prob &lt;- coffee_donut_prediction
+# Creates new column vector to hold the new predictions
+lattes_new$LR_pred &lt;- ifelse(coffee_donut_prediction &gt; 0.5, 1, 0)
+
+# Print df w/ prediction rows
+print(lattes_new)</code></pre>
+<pre><code>## # A tibble: 100 × 6
+##    Record   Age EstMonthsCustomer EstSalary LR_prob LR_pred
+##     &lt;dbl&gt; &lt;dbl&gt;             &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+##  1      1    26                11     68523  0.209        0
+##  2      2    58                23     52331  0.148        0
+##  3      3    33                22     88986  0.926        1
+##  4      4    34                 3     57489  0.0700       0
+##  5      5    35                10     82224  0.826        1
+##  6      6    43                17     51234  0.0482       0
+##  7      7    24                11     86911  0.825        1
+##  8      8    63                12     46947  0.0926       0
+##  9      9    68                11     68808  0.841        1
+## 10     10    28                10     61485  0.0870       0
+## # ℹ 90 more rows</code></pre>
+<pre class="r"><code># Export predictions added into the df
+write.csv(lattes_new, file = &quot;lattes_new_predictions.csv&quot;)</code></pre>
+</div>
+<div id="conclusion-and-analysis" class="section level2">
+<h2>Conclusion and Analysis</h2>
+<div id="feature-variables" class="section level3">
+<h3>Feature Variables</h3>
+<p>This was the most interesting part of the analysis to me. From the beginning, my intuition was that all the variables had some correlation, based off the fact that usually those with higher income are older, and if you are older you may have been going to the store as a regular for a while. This intuition is what made the coefficient signs make sense; if you have more money (with age usually) it would correlate positively with the purchasing behavior.</p>
+<p>After I build the initial model and started to think more seriously about multicollinearity, the more complex the program became. I added in the correlation matrix and VIF score on the all variable model. The corelation matrix showed significant correlation between all variables, but the VIF score showed little. I researched more and it appears sometimes the VIF score is not a good indicator, and you may need to use other metrics. I added in the calculation of the determinant of the coefficient matrix which also showed heavy corelation, and disregarded the VIF score for the rest of the analysis.</p>
+<p>After looking through all of the metrics for each model I concluded there is multicollinearity, and taking one of the two less powerful variables out of the model would be best. I contemplated using the single salary variable since it performed just as well at making predictions as the model with all variables or age+salary (95% accuracy), but found that the age variable still held statistical significance of (0.0405), and also had 95% accuracy. I believe by keeping this variable in we still have accurate predictions, it does offer some predictive power, and possibly more if the future data changes.</p>
+</div>
+<div id="logistic-regression-equation" class="section level3">
+<h3>Logistic Regression Equation</h3>
+<p>P(LatteDonut = 1) = e^(-14.44 + 0.07032×Age + 0.0001646×EstSalary) / (1 + e^(-14.44 + 0.07032×Age + 0.0001646×EstSalary))</p>
+</div>
+<div id="odds-ratio" class="section level3">
+<h3>Odds Ratio</h3>
+<p>Looking at the odds ratio we calculated at the end of the program, we can expect every 5 years of age increase to correlate to about 1.42 times more likely for a customer to buy a coffee and donut, and an increase in $10K salary to correlate to about 5.2 times more likely for a customer to buy a coffee and donut.</p>
+</div>
+<div id="most-important-feature-variable" class="section level3">
+<h3>Most Important Feature Variable</h3>
+<p>As we can see from our metrics, the most important feature variable is EstSalary. When narrowing down the variables to 2 (age + salary) the overall variable importance showed Age of 2.048 and EstSalary 5.15. The statistical significance was also considerably higher in EstSalary with alpha = 2.63e-07 compared to Age with alpha = 0.0405.</p>
+</div>
+<div id="predictive-power" class="section level3">
+<h3>Predictive Power</h3>
+<p>Yes this model should be used to predict purchase of coffee and donut at the same time because the model correctly predicted 95% of the time and other metrics below.</p>
+</div>
+<div id="confusion-matrix" class="section level3">
+<h3>Confusion Matrix</h3>
+<ul>
+<li>Correctly predicted 75 out of the customers who did not buy both, misclassified 5 as did not buy when they did (false negatives).</li>
+<li>Every time the model predicted buying both it was correct (precision).</li>
+</ul>
+</div>
+<div id="metrica-metrics" class="section level3">
+<h3>Metrica Metrics</h3>
+<ul>
+<li>High accuracy - 95.45% of predictions correct</li>
+<li>High precision - 93.75% of dual purchases caught</li>
+<li>Excellent recall - 100% of dual purchases predicted were correct</li>
+<li>Excellent F-score of 96.77% measuring combined precision and recall</li>
+</ul>
+</div>
+<div id="new-records-predictions" class="section level3">
+<h3>New Records Predictions</h3>
+<p>When new data was fed into the model it predicted simultaneous purchase of coffee and donut based on it’s probability. If it’s probability was predicted to be &gt; 50% it classified it as a 1 (simultaneous buy) and if the probability was predicted to be &lt; 50% it was 0 (did not buy simultaneously). The probabilities were based off of the logistic regression equation noted above where EstSalary had significantly more weight to the probability than age.</p>
 </div>
 </div>
 

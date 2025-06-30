@@ -1,18 +1,25 @@
-**====================================================================================**
-
-# Coffee Shop Purchasing Association Analysis  
-Noah MacGillivray | BIT-446 Assignment(T6) | Summer 2025 
-
-Logistic Regression Classification 
+---
+title: "Coffee Shop Purchasing Association Analysis"
+subtitle: "BIT-446 Assignment(T6) | Summer 2025"
+author: "Noah MacGillivray"
+date: "`r Sys.Date()`"
+output: html_document
+---
 
 **Environment:** Ubuntu, VS Code
 
-**====================================================================================**
-
 ## Introduction
-This program imports 
+This program is designed to analyze the relationship of a customer's age, timeline of being
+a customer and their estimated age to gain insight if these variables are correlated to 
+purchasing coffee and a donut at the same time for future business insight. 
 
-
+Logistic regression classification is used in the project to analyze these variables and 
+build a model to (hopefully) predict further purchasing decisions. The general flow of the 
+program is as follows: read data in --> analyze raw metrics --> split the first data field
+(that has known outcomes) into training/testing fields --> train the logistic regression model
+--> test the model's performance --> analyze the outcomes --> predict with new data where the
+outcomes are unknown.  
+  
 ## Required Packages 
 ```{r}
 # Load packages
@@ -27,25 +34,29 @@ library(skimr)
 library(knitr)
 library(kableExtra)
 library(fmsb)
+library(car)
+
 
 cat("All packages loaded successfully!\n")
 ```
 
 ## Data Import and Conversion
-The coffee shop data which includes three different sheets including the training/testing
+The coffee shop data file imported includes three different sheets including the training/testing
 data ("TrainTestData"), the new data for predictions ("NewData"), and a sheet related to the 
-data information ("Info"). The three sheets are read in and placed in a list and then 
+data information ("Info"). The three sheets are read, placed in a list and then 
 distributed to three different data field variables. The target variable ("LatteDonut") 
 in the training/testing data is then converted to a factor type to allow other packages 
 below to analyze the results. This was done before splitting to allow for further testing 
 as needed. 
 
 ```{r}
-
 # Read in sheet names
 sheet_names <- excel_sheets("BIT-446-RS-T6-Lattes1.xlsx")
+
+# Print the sheet to understand file structure
 print(sheet_names)
 
+# Create list to hold the different sheets
 all_sheets <- list()
 
 for (sheet in sheet_names) {
@@ -66,7 +77,9 @@ lattes$LatteDonut <- relevel(lattes$LatteDonut, ref = "0")
 ```
 
 ## Raw Data Summary
-TODO
+Here we view the raw data to the three sheets read in, head and tail are displayed to ensure
+proper import, info sheet is displayed describing each row in the data fields, and prints 
+out a basic summary.  
 
 ```{r}
 #Print the TrainTestData sheet
@@ -84,7 +97,7 @@ kable(data_info,
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
                 full_width = FALSE)
 
-# Loops through all sheets imported and prints the tails 
+# Loops through all sheets imported and prints the tails
 for (x in sheet_names) {
   cat("Sheet:", x, "\n")
   print(tail(all_sheets[[x]]))
@@ -100,16 +113,20 @@ for (x in sheet_names[-length(sheet_names)]) {
 
 ```
 
-
-
-## General Impressions From Summary 
-TODO
+## *General Impressions From Summary* 
+- Training and testing data sheet has 550 customer transactions with 5 columns. 
+- New data sheet for predictions has 100 customer transactions with 4 columns. 
+- Training/testing data appears more skewed (rightward) than the new data which is mostly
+evenly distributed. 
+- The training/testing sheet appears to have slightly younger customers, shorter customer
+time, and higher income. All three of these seem like they may be correlated. 
+- Approximately 32% of customers bought donuts with coffee in this data frame. 
 
 
 ## Data Splitting for ***Stratified*** Logistic Regression (LR) Training 
 Seed was set for reproducibility; data was split using random stratified approach 
 (random selection, but each train/test division has equal number of the target variable- 
-LatteDonut). 80% for training and 20% for testing.  
+LatteDonut). 80% for training and 20% for testing. Split data is printed for validation. 
 
 ```{r}
 
@@ -129,9 +146,9 @@ print(test_latte_donut)
 
 ```
 
-## Train logistic regression classification model
+## Train Logistic Regression Classification Model
 This is where we create the *logistic regression classification model* with:  
-- **Features**: Age, EstMonthsCustomer, and EstMonthsCustomer  
+- **Features**: Age, EstMonthsCustomer, and EstSalary  
 - **Target**: LatteDonut 
 
 ```{r}
@@ -141,6 +158,10 @@ late_donut_lr_model <- glm(LatteDonut ~ Age + EstMonthsCustomer + EstSalary,
 ```
 
 ## Model Information and Summary
+LR model summary is printed to show summary of model performance. Nagelkerke R^2 value
+is printed which shows the how well the model is segregating probabilities towards 
+0 or 1. Overall variable importance is printed to show how each variable is affecting 
+the model. 
 
 ```{r}
 # View model summary
@@ -150,70 +171,385 @@ summary(late_donut_lr_model)
 nagelkerke_r2 <- NagelkerkeR2(late_donut_lr_model)
 print(nagelkerke_r2)
 
+# Calculate variable overall importance
 var_importance <- varImp(late_donut_lr_model)
 print(var_importance)
 ```
 
-## Validate the Model 
+## Exploration of Different Model Variables 
+After running the initial model with all three variables, I wanted to see if there was 
+multicollinearity, and if so, would how would it affect the model's accuracy and predictive
+power. I 
 
 ```{r}
+# Original model for comparison
+cat("=======ALL THREE VARIABLES MODEL SUMMARY=======\n"); summary(late_donut_lr_model) # nolint
 
-prediction <- predict(late_donut_lr_model, newdata = test_latte_donut, type = "response") 
+# New model, remove age
+model_no_age <- glm(LatteDonut ~ EstMonthsCustomer + EstSalary, 
+                    family = binomial, data = train_latte_donut)
+cat("=======ESTMONTHSCUSTOMER+ESTSALARY MODEL SUMMARY=======\n"); summary(model_no_age) # nolint
 
-prediction <- ifelse(prediction > 0.5, "1", "0")
+# Remove EstMonthsCustomer
+model_no_months <- glm(LatteDonut ~ Age + EstSalary,
+                       family = binomial, data = train_latte_donut)
+cat("=======AGE+ESTSALARY MODEL SUMMARY=======\n"); summary(model_no_months) # nolint
 
-# Convert to factor for comparison
-prediction <- as.factor(prediction)
+# Remove EstSalary 
+model_no_salary <- glm(LatteDonut ~ Age + EstMonthsCustomer, 
+                       family = binomial, data = train_latte_donut)
+cat("=======AGE+ESTMONTHSCUSTOMER MODEL SUMMARY=======\n"); summary(model_no_salary) # nolint
 
-prediction <- as.data.frame(prediction)
+# EstSalary only model
+model_salary_only <- glm(LatteDonut ~ EstSalary,
+                        family = binomial, data = train_latte_donut)
+cat("=======ESTSALARY ONLY MODEL SUMMARY=======\n"); summary(model_salary_only) # nolint
+
+# All three variables variable importance
+cat("All three variables importance:\n"); var_importance
+
+var_importance_no_months <- varImp(model_no_months)
+cat("Age+EstSalary Variable importance:\n"); var_importance_no_months
+
+# Compare Nagelkerke R-squared
+nagelkerke_r2_original <- NagelkerkeR2(late_donut_lr_model)
+nagelkerke_r2_no_months <- NagelkerkeR2(model_no_months)
+nagelkerke_r2_salary_only <- NagelkerkeR2(model_salary_only)
+
+cat("Nagelkerke R-squared--Original (3 variables):\n"); nagelkerke_r2_original
+cat("Nagelkerke R-squared--Age + EstSalary only:\n"); nagelkerke_r2_no_months
+cat("Nagelkerke R-squared--EstSalary only:\n"); nagelkerke_r2_salary_only
+
+# Plot the 3 vars and age+salary variable importance
+plot(var_importance, main = "Variable Importance - All Variables")
+plot(var_importance_no_months,
+     main = "Variable Importance - EstMonthsCustomer Removed")
 ```
 
-## Model Results and Metrics 
+
+## Exploration of Variable Importance
+Now that we have all of the metrics related to the LR model we can look at the variable
+importance and any corelation problems. To check these we look at corelation matrices, 
+variance inflation factors, and the determinant of the correlation matrices. 
+```{r}
+# Check correlations between predictors
+cor_matrix_all_vars <- cor(lattes[, c("Age", "EstMonthsCustomer", "EstSalary")]) # nolint
+print(cor_matrix_all_vars)
+
+cor_matrix_age_sal <- cor(lattes[, c("Age", "EstSalary")]) # nolint
+print(cor_matrix_age_sal)
+
+cor_matrix_months_sal <- cor(lattes[, c("EstMonthsCustomer", "EstSalary")]) # nolint
+print(cor_matrix_months_sal)
+
+# Variance Inflation Factors (VIF)
+
+vif(late_donut_lr_model)
+
+# Find determinant of correlation matrix
+det_corr_all_vars <- det(cor_matrix_all_vars)
+cat("Determinant of correlation matrix:", det_corr_all_vars, "\n")
+
+det_corr_age_sal <- det(cor_matrix_age_sal)
+cat("Determinant of correlation matrix:", det_corr_age_sal, "\n")
+
+det_corr_months_sal <- det(cor_matrix_months_sal)
+cat("Determinant of correlation matrix:", det_corr_months_sal, "\n")
+```
+
+## Validate the Model (***all variables***)
+At this point we have trained the LR model using the 80% training data from the split 
+and now we want to make predictions based on the 20% split where we know the outcomes. 
+We use the trained model (late_donut_lr_model), feed in the 20% split (test_latte_donut),
+and set the type to "response" to ensure we get probability values from 0 to 1. This is 
+accomplished by using the inverse of the logit function where p = e^(logit) / (1 + e^(logit)).
+We then set the prediction threshold of 0.5 where values > 0.5 are classified at 1 and 
+< 0.5 are 0. Those predictions are then converted to both a factor and then a single column 
+vector. 
+
+**Note: Subsequent validations were completed after the initial validation to analyze other
+combinations of variables and noted below.**
+```{r}
+# Runs the LR model with predict () using the model we trained
+raw_pred_all_vars <- predict(late_donut_lr_model,
+                      newdata = test_latte_donut,
+                      type = "response")
+
+# Sets prediction threshold
+raw_pred_all_vars <- ifelse(raw_pred_all_vars > 0.5, "1", "0")
+
+# Convert to factor for comparison
+raw_pred_all_vars <- as.factor(raw_pred_all_vars)
+
+```
+
+## Validate the Model (***EstMonthsCustomer removed***)
 
 ```{r}
-# Create confusion matrix 
-confusionMatrix(data = prediction$prediction, 
-                reference = test_latte_donut$LatteDonut,
-                mode = "prec_recall")
+# Runs the LR model with predict () using the model we trained
+pred_simple_vars <- predict(model_no_months,
+                            newdata = test_latte_donut,
+                            type = "response")
 
+# Sets prediction threshold
+pred_simple_vars <- ifelse(pred_simple_vars > 0.5, "1", "0")
+
+# Convert to factor for comparison
+pred_simple_vars <- as.factor(pred_simple_vars)
+```
+
+## Validate the Model (***EstSalary only***)
+
+```{r}
+# Runs the LR model with predict () using the model we trained
+pred_salary_only <- predict(model_salary_only,
+                            newdata = test_latte_donut,
+                            type = "response")
+
+# Sets prediction threshold
+pred_salary_only <- ifelse(pred_salary_only > 0.5, "1", "0")
+
+# Convert to factor for comparison
+pred_salary_only <- as.factor(pred_salary_only)
+```
+## Validate the Model (***EstMonthsCustomer + EstSalary only***)
+
+```{r}
+# Runs the LR model with predict() using the model we trained
+pred_months_sal <- predict(model_no_age,
+                          newdata = test_latte_donut,
+                          type = "response")
+
+# Sets prediction threshold
+pred_months_sal <- ifelse(pred_months_sal > 0.5, "1", "0")
+
+# Convert to factor for comparison
+pred_months_sal <- as.factor(pred_months_sal)
+```
+## Model Results and Metrics 
+A confusion matrix and statistics, metrica metrics summary with it's own confusion matrix 
+were used for models including all the variables, ESTMONTHSCUSTOMER removed, AGE removed, 
+and then ESTSALARY on its own. 
+
+```{r}
+# Create confusion matrix for original df w/ all variables
+conf_matrix_all_vars <-
+  confusionMatrix(data = raw_pred_all_vars,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = "prec_recall")
+
+# Create confusion matrix for simple df w/ EstMonthsCustomer removed
+conf_matrix_simple_vars <-
+  confusionMatrix(data = pred_simple_vars,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = "prec_recall")
+
+# Create confusion matrix for salary only
+conf_matrix_salary_only <-
+  confusionMatrix(data = pred_salary_only,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = "prec_recall")
+
+# Create confusion matrix for months and salary
+conf_matrix_months_salary <-
+  confusionMatrix(data = pred_months_sal,
+                  reference = test_latte_donut$LatteDonut,
+                  mode = "prec_recall")
+
+print(conf_matrix_all_vars)
+print(conf_matrix_simple_vars)
+print(conf_matrix_salary_only)
+print(conf_matrix_months_salary)
+
+# ***All variables model***
 # Converts factors back to numerical values and
 # places them in a df to use w/ metric summary
-observations <- as.numeric(paste(test_latte_donut$LatteDonut))
-predictions <- as.numeric(paste(prediction$prediction))
-data <- data.frame(cbind(observations, predictions))
+obs_all_vars <- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_all_vars <- as.numeric(paste(raw_pred_all_vars))
+data_all_vars <- data.frame(cbind(obs_all_vars, pred_all_vars))
 
+# ***All variables model***
 # Create comprehensive metrics summary using metrica package
 metrics_summary(
-  data = data,
-  obs = observations,
-  pred = predictions,
+  data = data_all_vars,
+  obs = obs_all_vars,
+  pred = pred_all_vars,
   pos_level = 1,
   type = "classification"
 )
-
+# ***All variables model***
 # Confusion matrix from metrica
 confusion_matrix(
-  data = data,
-  obs = observations,
-  pred = predictions,
+  data = data_all_vars,
+  obs = obs_all_vars,
+  pred = pred_all_vars,
 )
+
+# ***Age+Salary model***
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+obs_age_sal <- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_age_sal <- as.numeric(paste(pred_simple_vars))
+data_age_sal <- data.frame(cbind(obs_age_sal, pred_age_sal))
+
+# ***Age+Salary model***
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data_age_sal,
+  obs = obs_age_sal,
+  pred = pred_age_sal,
+  pos_level = 1,
+  type = "classification"
+)
+# ***Age+Salary model***
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data_all_vars,
+  obs = obs_all_vars,
+  pred = pred_all_vars,
+)
+
+# ***Salary only model***
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+obs_sal_only <- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_sal_only <- as.numeric(paste(pred_salary_only))
+data_sal_only <- data.frame(cbind(obs_sal_only, pred_sal_only))
+
+# ***Salary only model***
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data_sal_only,
+  obs = obs_sal_only,
+  pred = pred_sal_only,
+  pos_level = 1,
+  type = "classification"
+)
+# ***Salary only model***
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data_sal_only,
+  obs = obs_sal_only,
+  pred = pred_sal_only,
+)
+
+# ***Months+Salary model***
+# Converts factors back to numerical values and
+# places them in a df to use w/ metric summary
+obs_months_sal <- as.numeric(paste(test_latte_donut$LatteDonut))
+pred_months_sal <- as.numeric(paste(pred_months_sal))
+data_months_sal <- data.frame(cbind(obs_months_sal, pred_months_sal))
+
+# ***Months+Salary model***
+# Create comprehensive metrics summary using metrica package
+metrics_summary(
+  data = data_months_sal,
+  obs = obs_months_sal,
+  pred = pred_months_sal,
+  pos_level = 1,
+  type = "classification"
+)
+# ***Months+Salary model***
+# Confusion matrix from metrica
+confusion_matrix(
+  data = data_months_sal,
+  obs = obs_months_sal,
+  pred = pred_months_sal,
+)
+
+print("Odds Ratios with 95% Confidence Intervals:")
+exp(confint(model_no_months))
+
+# Point estimate for 5-year increase
+age_5_year_odds_ratio <- exp(0.07032 * 5)
+print(paste("5-year age increase OR:", age_5_year_odds_ratio))
+
+# Point estimate for $10,000 increase
+salary_10k_odds_ratio <- exp(0.0001646 * 10000)
+print(paste("$10,000 salary increase OR:", salary_10k_odds_ratio))
 ```
 
-## New Data LR Predictions 
 
+## New Data LR Predictions 
+This chunk uses the model with with Age and EstSalary to make predictions on the new 
+data. It adds two columns to the initial data field, prints and saves to CSV file for 
+viewing. 
 ```{r}
-coffee_donut_prediction <- predict(late_donut_lr_model,
+# Train new data without known predictions with months removed
+coffee_donut_prediction <- predict(model_no_months,
                                    newdata = lattes_new,
                                    type = "response")
 
+# Creates new column vector to hold the new probabilities
 lattes_new$LR_prob <- coffee_donut_prediction
+# Creates new column vector to hold the new predictions
 lattes_new$LR_pred <- ifelse(coffee_donut_prediction > 0.5, 1, 0)
 
+# Print df w/ prediction rows
 print(lattes_new)
 
-
-
+# Export predictions added into the df
+write.csv(lattes_new, file = "lattes_new_predictions.csv")
 ```
 
 ## Conclusion and Analysis
+### Feature Variables 
+This was the most interesting part of the analysis to me. From the beginning, my intuition 
+was that all the variables had some correlation, based off the fact that usually those with 
+higher income are older, and if you are older you may have been going to the store as a regular
+for a while. This intuition is what made the coefficient signs make sense; if you have more 
+money (with age usually) it would correlate positively with the purchasing behavior. 
 
+After I build the initial model and started to think more seriously about 
+multicollinearity, the more complex the program became. I added in the correlation matrix 
+and VIF score on the all variable model. The corelation matrix showed significant correlation 
+between all variables, but the VIF score showed little. I researched more and it appears
+sometimes the VIF score is not a good indicator, and you may need to use other metrics. I 
+added in the calculation of the determinant of the coefficient matrix which also showed 
+heavy corelation, and disregarded the VIF score for the rest of the analysis. 
+
+After looking through all of the metrics for each model I concluded there is multicollinearity,
+and taking one of the two less powerful variables out of the model would be best. I contemplated 
+using the single salary variable since it performed just as well at making predictions as 
+the model with all variables or age+salary (95% accuracy), but found that the age variable 
+still held statistical significance of (0.0405), and also had 95% accuracy. I believe by 
+keeping this variable in we still have accurate predictions, it does offer some predictive power, 
+and possibly more if the future data changes. 
+
+### Logistic Regression Equation 
+P(LatteDonut = 1) = e^(-14.44 + 0.07032×Age + 0.0001646×EstSalary) / (1 + e^(-14.44 + 0.07032×Age + 0.0001646×EstSalary))
+
+### Odds Ratio
+Looking at the odds ratio we calculated at the end of the program, we can expect every 
+5 years of age increase to correlate to about 1.42 times more likely for a customer to buy a coffee and donut, 
+and an increase in $10K salary to correlate to about 5.2 times more likely for a customer 
+to buy a coffee and donut. 
+
+### Most Important Feature Variable
+As we can see from our metrics, the most important feature variable is EstSalary. 
+When narrowing down the variables to 2 (age + salary) the overall variable importance showed
+Age of 2.048 and EstSalary 5.15. The statistical significance was also considerably higher 
+in EstSalary with alpha = 2.63e-07 compared to Age with alpha = 0.0405. 
+
+### Predictive Power 
+Yes this model should be used to predict purchase of coffee and donut at the same time 
+because the model correctly predicted 95% of the time and other metrics below. 
+
+### Confusion Matrix 
+- Correctly predicted 75 out of the customers who did not buy both, misclassified 5 as did 
+not buy when they did (false negatives).
+- Every time the model predicted buying both it was correct (precision).
+
+### Metrica Metrics 
+- High accuracy - 95.45% of predictions correct 
+- High precision - 93.75% of dual purchases caught 
+- Excellent recall - 100% of dual purchases predicted were correct
+- Excellent F-score of 96.77% measuring combined precision and recall 
+
+### New Records Predictions
+When new data was fed into the model it predicted simultaneous purchase of coffee and 
+donut based on it's probability. If it's probability was predicted to be > 50% it classified 
+it as a 1 (simultaneous buy) and if the probability was predicted to be < 50% it was 0
+(did not buy simultaneously). The probabilities were based off of the logistic regression 
+equation noted above where EstSalary had significantly more weight to the probability than
+age. 
