@@ -159,7 +159,7 @@ late_donut_lr_model <- glm(LatteDonut ~ Age + EstMonthsCustomer + EstSalary,
 
 ## Model Information and Summary
 LR model summary is printed to show summary of model performance. Nagelkerke R^2 value
-is printed which shows the how well the model is segregating probabilities towards 
+is printed which shows how well the model is segregating probabilities towards 
 0 or 1. Overall variable importance is printed to show how each variable is affecting 
 the model. 
 
@@ -179,7 +179,7 @@ print(var_importance)
 ## Exploration of Different Model Variables 
 After running the initial model with all three variables, I wanted to see if there was 
 multicollinearity, and if so, would how would it affect the model's accuracy and predictive
-power. I 
+power.
 
 ```{r}
 # Original model for comparison
@@ -500,7 +500,7 @@ higher income are older, and if you are older you may have been going to the sto
 for a while. This intuition is what made the coefficient signs make sense; if you have more 
 money (with age usually) it would correlate positively with the purchasing behavior. 
 
-After I build the initial model and started to think more seriously about 
+After I built the initial model and started to think more seriously about 
 multicollinearity, the more complex the program became. I added in the correlation matrix 
 and VIF score on the all variable model. The corelation matrix showed significant correlation 
 between all variables, but the VIF score showed little. I researched more and it appears
