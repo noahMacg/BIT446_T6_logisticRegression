@@ -35,8 +35,6 @@ Libraries:
 - Trained separate LR models with different feature variables combinations
 - Analyzed multicollinearity through corelation matrices, variance inflation factors,
   and the determinant of the correlation matrices. 
-- Found that although VIF did not find correlation, the matrix and determinant of the 
-  matrix did find correlation and VIF is sometimes not a good indicator. 
 - After evaluating the correlation of features, validated models of 1,2,3 features and
   evaluated their metrics. 
 - Balance between minimizing feature corelation and performance was found using 2
@@ -46,22 +44,44 @@ Libraries:
 0.0001646×EstSalary) / (1 + e^(-14.44 + 0.07032×Age + 0.0001646×EstSalary))
 
 ### Results 
-***Multicollinearity***
+**Multicollinearity:** Although VIF did not find correlation, the matrix and determinant of the 
+  matrix did find correlation, and learned VIF is sometimes not a good indicator.
 
-***Feature Importance***
+**Corelation Matrix**(all vars)
+
+                        Age EstMonthsCustomer EstSalary
+Age               1.0000000         0.8194954 0.9229264
+EstMonthsCustomer 0.8194954         1.0000000 0.8865444
+EstSalary         0.9229264         0.8865444 1.0000000
+
+**VIF**(all vars)
+
+Age          EstMonthsCustomer      EstSalary 
+1.152303          1.003551          1.149028
+
+**Determinant of Matrix**(all vars): 0.0317204
+
+**Feature Importance**
 Estimated Salary: Variable importance 5.15 with statistical significance alpha =
 2.63e-07
 Age: Variable importance 2.05 with statistical significance alpha = 0.04. 
 
-***Odds Ratio***
-In relation to buying coffee/donut simultaneously, we can expect:
+**Odds Ratio:**In relation to buying coffee/donut simultaneously, we can expect:
 - Increase in $10K salary to correlate to about 5.2 times more likely
 - 5 years of age increase to correlate to about 1.42 times more likely 
 
-***Metrics***
+**Metrics**
 - High accuracy - 95.45% of predictions correct
 - High precision - 93.75% of dual purchases caught
 - Excellent recall - 100% of dual purchases predicted were correct
 - Excellent F-score of 96.77% measuring combined precision and recall
 
+### Business Insight
+This model performs well and can be used to predict simultaneous purchase of
+donut/coffee with 95% accuracy. We found the that most predictive feature is estimated
+salary, age did appear to have some influence on the dataset with statistical
+significance, and the time a customer has been to the shop appears to be highly
+correlated with one or both of the other features. The shop can investigate and use this
+information to make decisions on marketing to the the customers in the lower feature
+importance (age/length) to increase sales. 
 
