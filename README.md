@@ -22,7 +22,7 @@ Libraries: readxl, caret, ggplot2, metrica, car, caTools
 - Imported three data sheets from Excel into separate data frames: training/testing
   data, new prediction data, and column information.
 - Target variable "LatteDonut" converted to a factor type. 
-- Applied stratified random sampling for 80/20 train-test split with reproducible seed
+- Applied stratified random sampling for 80/20 train-test split with reproducible seed.
 
 **Logistic Regression Model Training**  
 - *Features*: Age, EstMonthsCustomer, EstSalary
@@ -30,7 +30,7 @@ Libraries: readxl, caret, ggplot2, metrica, car, caTools
 - *Family*: Binomial distribution 
 
 **Multicollinearity Analysis and Feature Selection**
-- Trained separate LR models with different feature combinations
+- Trained separate LR models with different feature combinations.
 - Analyzed multicollinearity through correlation matrices, variance inflation factors (VIF), and correlation matrix determinants. 
 - After evaluating the correlation of features, validated models of 1,2,3 features and
   evaluated their metrics. 
@@ -60,9 +60,9 @@ it's determinant revealed strong correlation, demonstrating VIF is not always re
 **Determinant of Matrix**(all vars): 0.0317204
 
 **Feature Importance**
-Estimated Salary: Variable importance 5.15 with statistical significance alpha =
+- Estimated Salary: Variable importance 5.15 with statistical significance alpha =
 2.63e-07
-Age: Variable importance 2.05 with statistical significance alpha = 0.04. 
+- Age: Variable importance 2.05 with statistical significance alpha = 0.04. 
 
 **Odds Ratio:** For simultaneous coffee/donut purchase, we can expect:
 - $10K salary --> 5.2 times more likely to purchase 
