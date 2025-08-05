@@ -86,8 +86,8 @@ marketing to the the customers in the lower feature importance (age/length) to i
 dual purchase sales. 
 
 ### Technical Challenges Learned
-- Multicollinearity detection using multiple tools 
-- Feature engineering balancing correlation and performance 
-- Comprehensive model evaluation beyond accuracy metrics  
-- Business translations of statistical findings 
+- Multicollinearity detection using multiple tools. 
+- Feature engineering balancing correlation and performance.
+- Comprehensive model evaluation beyond accuracy metrics.  
+- Business translations of statistical findings. 
 
