@@ -5,47 +5,44 @@ R**
 ## Overview 
 Built a logistic regression classifier to predict simultaneous purchasing of
 coffee/donut with 95% accuracy and 94% precision by analyzing 550 customer transactions
-to find factors influencing the purchase behavior.  
+to find factors influencing purchase behavior.  
 
 **Feature Variables**
 - Customer age
-- Estimated months they have been a customer
-- Estimated annual salary in dollar 
+- Estimated months as a customer
+- Estimated annual salary 
 
 
 ### Technical Stack
 Environment: R, VS Code, Ubuntu  
-Libraries:  
+Libraries: readxl, caret, ggplot2, metrica, car, caTools 
 
 ### Technical Approach 
 **Import and Data Processing**
-- Three data sheets in one file imported into their own data frame: One sheet includes 
-  training/testing; one includes new data for predictions; and one that includes column 
-  information.
-- Target variable "LatteDonut" converted to a factor. 
-- Seed was set for reproducibility; testing/training data was split using random stratified approach 
-- 80% for training and 20% for testing.
+- Imported three data sheets from Excel into separate data frames: training/testing
+  data, new prediction data, and column information.
+- Target variable "LatteDonut" converted to a factor type. 
+- Applied stratified random sampling for 80/20 train-test split with reproducible seed
 
 **Logistic Regression Model Training**  
-- *Features*: Age, EstMonthsCustomer, and EstSalary
-- *Target*: LatteDonut
-- *Family*: Binomial 
+- *Features*: Age, EstMonthsCustomer, EstSalary
+- *Target*: LatteDonut (binary classification)
+- *Family*: Binomial distribution 
 
-**Exploration of Different Models**
-- Trained separate LR models with different feature variables combinations
-- Analyzed multicollinearity through corelation matrices, variance inflation factors,
-  and the determinant of the correlation matrices. 
+**Multicollinearity Analysis and Feature Selection**
+- Trained separate LR models with different feature combinations
+- Analyzed multicollinearity through correlation matrices, variance inflation factors (VIF), and correlation matrix determinants. 
 - After evaluating the correlation of features, validated models of 1,2,3 features and
   evaluated their metrics. 
 - Balance between minimizing feature corelation and performance was found using 2
   variables (age/estsalary). 
 
-**Logistic Regression Equation:** P(LatteDonut = 1) = e^(-14.44 + 0.07032×Age +
+**Final Model Equation:** P(LatteDonut = 1) = e^(-14.44 + 0.07032×Age +
 0.0001646×EstSalary) / (1 + e^(-14.44 + 0.07032×Age + 0.0001646×EstSalary))
 
 ### Results 
-**Multicollinearity:** Although VIF did not find correlation, the matrix and determinant of the 
-  matrix did find correlation, and learned VIF is sometimes not a good indicator.
+**Multicollinearity:** Although VIF scores appeared acceptable, correlation matrix and
+it's determinant revealed strong correlation, demonstrating VIF is not always reliable. 
 
 **Corelation Matrix**(all vars)
 
@@ -66,22 +63,30 @@ Estimated Salary: Variable importance 5.15 with statistical significance alpha =
 2.63e-07
 Age: Variable importance 2.05 with statistical significance alpha = 0.04. 
 
-**Odds Ratio:**In relation to buying coffee/donut simultaneously, we can expect:
-- Increase in $10K salary to correlate to about 5.2 times more likely
-- 5 years of age increase to correlate to about 1.42 times more likely 
+**Odds Ratio:**For simultaneous coffee/donut purchase, we can expect:
+- $10K salary --> 5.2 times more likely to purchase 
+- 5 years of age --> 1.42 times more likely to purchase 
 
-**Metrics**
-- High accuracy - 95.45% of predictions correct
-- High precision - 93.75% of dual purchases caught
-- Excellent recall - 100% of dual purchases predicted were correct
-- Excellent F-score of 96.77% measuring combined precision and recall
+**Model Performance Metrics**
+- Accuracy: 95.45% of predictions correct
+- Precision: 93.75% of dual purchases caught
+- Recall:  100% of dual purchases predicted were correct
+- F-score of 96.77% measuring combined precision and recall
 
 ### Business Insight
-This model performs well and can be used to predict simultaneous purchase of
-donut/coffee with 95% accuracy. We found the that most predictive feature is estimated
-salary, age did appear to have some influence on the dataset with statistical
-significance, and the time a customer has been to the shop appears to be highly
-correlated with one or both of the other features. The shop can investigate and use this
-information to make decisions on marketing to the the customers in the lower feature
-importance (age/length) to increase sales. 
+This model demonstrates strong predict power for simultaneous donut/coffee purchases
+with 95% accuracy. 
+- Estimated salary was the most predictive feature with highes statistical significance. 
+- Age appeared to have some influence with statistical significance alpha = 0.04. 
+- Customer tenure appears to be highly correlated with other features. 
+
+**Recommendations** The coffee shop can investigate and use these insights towards
+marketing to the the customers in the lower feature importance (age/length) to increase
+dual purchase sales. 
+
+### Technical Challenges Learned
+- Multicollinearity detection 
+- Feature engineering 
+- Multiple model validations 
+- Business translations 
 
