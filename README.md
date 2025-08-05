@@ -46,10 +46,10 @@ it's determinant revealed strong correlation, demonstrating VIF is not always re
 
 **Corelation Matrix**(all vars)
 
-                        Age EstMonthsCustomer EstSalary
-Age               1.0000000         0.8194954 0.9229264
-EstMonthsCustomer 0.8194954         1.0000000 0.8865444
-EstSalary         0.9229264         0.8865444 1.0000000
+                  Age           EstMonthsCustomer   EstSalary
+Age               1.0000000         0.8194954       0.9229264  
+EstMonthsCustomer 0.8194954         1.0000000       0.8865444  
+EstSalary         0.9229264         0.8865444       1.0000000
 
 **VIF**(all vars)
 
