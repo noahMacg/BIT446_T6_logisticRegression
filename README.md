@@ -44,17 +44,18 @@ Libraries: readxl, caret, ggplot2, metrica, car, caTools
 **Multicollinearity:** Although VIF scores appeared acceptable, correlation matrix and
 it's determinant revealed strong correlation, demonstrating VIF is not always reliable. 
 
-**Corelation Matrix**(all vars)
+**Correlation Matrix** (all variables):
 
-                  Age           EstMonthsCustomer   EstSalary
-Age               1.0000000         0.8194954       0.9229264  
-EstMonthsCustomer 0.8194954         1.0000000       0.8865444  
-EstSalary         0.9229264         0.8865444       1.0000000
+| Variable | Age | EstMonthsCustomer | EstSalary |
+|----------|-----|-------------------|-----------|
+| Age | 1.0000 | 0.8195 | 0.9229 |
+| EstMonthsCustomer | 0.8195 | 1.0000 | 0.8865 |
+| EstSalary | 0.9229 | 0.8865 | 1.0000 |
 
-**VIF**(all vars)
-
-Age          EstMonthsCustomer      EstSalary 
-1.152303          1.003551          1.149028
+**VIF Scores** (all variables):
+- Age: 1.152303
+- EstMonthsCustomer: 1.003551  
+- EstSalary: 1.149028
 
 **Determinant of Matrix**(all vars): 0.0317204
 
