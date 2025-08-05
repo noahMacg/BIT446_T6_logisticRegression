@@ -63,7 +63,7 @@ Estimated Salary: Variable importance 5.15 with statistical significance alpha =
 2.63e-07
 Age: Variable importance 2.05 with statistical significance alpha = 0.04. 
 
-**Odds Ratio:**For simultaneous coffee/donut purchase, we can expect:
+**Odds Ratio:** For simultaneous coffee/donut purchase, we can expect:
 - $10K salary --> 5.2 times more likely to purchase 
 - 5 years of age --> 1.42 times more likely to purchase 
 
@@ -85,8 +85,8 @@ marketing to the the customers in the lower feature importance (age/length) to i
 dual purchase sales. 
 
 ### Technical Challenges Learned
-- Multicollinearity detection 
-- Feature engineering 
-- Multiple model validations 
-- Business translations 
+- Multicollinearity detection using multiple tools 
+- Feature engineering balancing correlation and performance 
+- Comprehensive model evaluation beyond accuracy metrics  
+- Business translations of statistical findings 
 
