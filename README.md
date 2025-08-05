@@ -57,12 +57,12 @@ its determinant revealed strong correlation, demonstrating VIF is not always rel
 - EstMonthsCustomer: 1.003551  
 - EstSalary: 1.149028
 
-**Determinant of Matrix**(all vars): 0.0317204
+**Determinant of Correlation Matrix**(all vars): 0.0317204
 
 **Feature Importance**
 - Estimated Salary: Variable importance 5.15 with statistical significance alpha =
 2.63e-07
-- Age: Variable importance 2.05 with statistical significance alpha = 0.04. 
+- Age: Variable importance 2.05 with statistical significance alpha = 0.04
 
 **Odds Ratio:** For simultaneous coffee/donut purchase, we can expect:
 - $10K salary --> 5.2 times more likely to purchase 
@@ -90,4 +90,3 @@ dual purchase sales.
 - Feature engineering balancing correlation and performance.
 - Comprehensive model evaluation beyond accuracy metrics.  
 - Business translations of statistical findings. 
-
