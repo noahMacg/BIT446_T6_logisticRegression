@@ -34,7 +34,7 @@ Libraries: readxl, caret, ggplot2, metrica, car, caTools
 - Analyzed multicollinearity through correlation matrices, variance inflation factors (VIF), and correlation matrix determinants. 
 - After evaluating the correlation of features, validated models of 1,2,3 features and
   evaluated their metrics. 
-- Balance between minimizing feature corelation and performance was found using 2
+- Balance between minimizing feature correlation and performance was found using 2
   variables (age/estsalary). 
 
 **Final Model Equation:** P(LatteDonut = 1) = e^(-14.44 + 0.07032×Age +
@@ -42,7 +42,7 @@ Libraries: readxl, caret, ggplot2, metrica, car, caTools
 
 ### Results 
 **Multicollinearity:** Although VIF scores appeared acceptable, correlation matrix and
-it's determinant revealed strong correlation, demonstrating VIF is not always reliable. 
+its determinant revealed strong correlation, demonstrating VIF is not always reliable. 
 
 **Correlation Matrix** (all variables):
 
@@ -74,15 +74,15 @@ it's determinant revealed strong correlation, demonstrating VIF is not always re
 - Recall:  100% of dual purchases predicted were correct
 - F-score of 96.77% measuring combined precision and recall
 
-### Business Insight
-This model demonstrates strong predict power for simultaneous donut/coffee purchases
+### Business Insights
+This model demonstrates strong predictive power for simultaneous donut/coffee purchases
 with 95% accuracy. 
-- Estimated salary was the most predictive feature with highes statistical significance. 
+- Estimated salary was the most predictive feature with highest statistical significance. 
 - Age appeared to have some influence with statistical significance alpha = 0.04. 
 - Customer tenure appears to be highly correlated with other features. 
 
-**Recommendations** The coffee shop can investigate and use these insights towards
-marketing to the the customers in the lower feature importance (age/length) to increase
+**Recommendations** The coffee shop can investigate and use these insights toward
+marketing to customers in the lower feature importance (age/length) to increase
 dual purchase sales. 
 
 ### Technical Challenges Learned
